@@ -1,0 +1,38 @@
+# Runtime & Cache
+/protected/runtime/*
+/examples/queue/protected/runtime/*
+/examples/queue/protected/runtime/queue/*
+/runtime/*
+*.log
+*.cache
+
+# Composer
+/vendor/
+composer.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config with secrets
+/protected/config/local.php
+.env
+
+# Uploads
+/uploads/
+
+# Library (optional)
+/library/taktik/
+/library/php-curl-class/
+
+# Keep autoloader
+!/library/autoload.php
+
+# Backup
+*.bak
+*.old
