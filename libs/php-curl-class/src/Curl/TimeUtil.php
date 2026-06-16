@@ -15,7 +15,7 @@ class TimeUtil
      */
     public static function getSleepUntilMicrotime(
         float $start_time,
-        int $interval_seconds,
+        int $interval_seconds
     ): float {
         $result = $start_time + (float)$interval_seconds;
         return $result;
