@@ -2,7 +2,7 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\JwtComponent
+ * @package Hiya\Components\Jwt
  * @since 1.0
  */
 
@@ -23,7 +23,7 @@ use Hiya\Security\JWT;
  *   // Logout (revoke token)
  *   Hiya::app()->jwt->revoke($token);
  */
-class JwtComponent extends \CApplicationComponent
+class Jwt extends \CApplicationComponent
 {
     /**
      * @var string Secret key for JWT (min 32 chars)

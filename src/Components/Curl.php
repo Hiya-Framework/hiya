@@ -2,7 +2,7 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\CurlComponent
+ * @package Hiya\Components\Curl
  * @since 1.0
  */
 
@@ -22,10 +22,7 @@ if (file_exists($composerAutoload)) {
     }
 }
 
-/**
- * CurlComponent Class
- */
-class CurlComponent extends \CApplicationComponent
+class Curl extends \CApplicationComponent
 {
     public $defaultOptions = [];
     protected $_curl;

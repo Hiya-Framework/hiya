@@ -1,7 +1,5 @@
 # Runtime & Cache
 /protected/runtime/*
-/examples/queue/protected/runtime/*
-/examples/queue/protected/runtime/queue/*
 /runtime/*
 *.log
 *.cache
@@ -26,12 +24,6 @@ Thumbs.db
 # Uploads
 /uploads/
 
-# Library (optional)
-/library/taktik/
-/library/php-curl-class/
-
-# Keep autoloader
-!/library/autoload.php
 
 # Backup
 *.bak

@@ -2,7 +2,7 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\QueueComponent
+ * @package Hiya\Components\Queue
  * @since 1.0
  */
 
@@ -10,7 +10,7 @@ namespace Hiya\Components;
 
 use Hiya\Queue\Queue;
 
-class QueueComponent extends \CApplicationComponent
+class Queue extends \CApplicationComponent
 {
     public $default = 'file';
     public $connections = [];

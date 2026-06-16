@@ -39,8 +39,8 @@ class Hiya extends YiiBase
      */
     public static $_coreComponents = [
         'session' => ['class' => 'Hiya\\Components\\Session'],
-        'auth'   => ['class' => 'Hiya\\Components\\AuthComponent'],
-        'jwt'    => ['class' => 'Hiya\\Components\\JwtComponent'],
+        'auth'   => ['class' => 'Hiya\\Components\\Auth'],
+        'jwt'    => ['class' => 'Hiya\\Components\\Jwt'],
     ];
     
     /**

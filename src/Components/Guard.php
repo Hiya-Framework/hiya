@@ -2,7 +2,7 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\GuardComponent
+ * @package Hiya\Components\Guard
  * @since 1.0
  */
 
@@ -22,7 +22,7 @@ use Hiya\Auth\Gate;
  *   Hiya::app()->auth->can('update', $post);
  *   Hiya::app()->auth->authorize('delete', $post);
  */
-class GuardComponent extends \CApplicationComponent
+class Guard extends \CApplicationComponent
 {
     /**
      * @var SessionGuard

@@ -26,7 +26,6 @@ spl_autoload_register(function ($className) {
         $relativeClass = substr($className, 4);
         $classFile = str_replace('\\', '/', $relativeClass);
         
-        // Coba di berbagai lokasi
         $paths = [
             HIYA_PATH . '/src/Base/' . $classFile . '.php',           // Base classes
             HIYA_PATH . '/src/' . $classFile . '.php',                // Root src
@@ -36,6 +35,8 @@ spl_autoload_register(function ($className) {
             HIYA_PATH . '/src/Security/' . $classFile . '.php',       // Security
             HIYA_PATH . '/src/Logging/' . $classFile . '.php',        // Logging
             HIYA_PATH . '/src/Logging/views/' . $classFile . '.php',  // Logging views
+            HIYA_PATH . '/src/Error/' . $classFile . '.php',        // Error
+            HIYA_PATH . '/src/Error/views/' . $classFile . '.php',  // Error views
         ];
         
         foreach ($paths as $path) {
