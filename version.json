@@ -1,0 +1,16 @@
+{
+    "latest_version": "1.0.0-dev",
+    "release_date": "2026-06-16",
+    "minimum_php": "7.4",
+    "status": "development",
+    "changelog_url": "https://github.com/Hiya-Framework/hiya/blob/main/CHANGELOG.md",
+    "download_url": "https://github.com/Hiya-Framework/hiya/archive/refs/heads/master.zip",
+    "checks": {
+        "security_patch": false,
+        "critical_update": false
+    },
+    "messages": {
+        "info": "Hiya Framework is currently under active development. Not recommended for production use yet.",
+        "warning": null
+    }
+}
