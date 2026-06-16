@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        php: ['7.4', '8.0', '8.1', '8.2', '8.3']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
     
     steps:
     - name: Checkout code
@@ -66,53 +66,119 @@ jobs:
         "
       shell: bash
     
-    - name: Test components
+    - name: Test all PHP classes
       run: |
-        echo "Testing components..."
+        echo "Testing all PHP classes in src/..."
         php -r "
           require_once 'autoload.php';
-          \$classes = [
-            'Hiya\\Helpers\\ArrayHelper',
-            'Hiya\\Helpers\\StringHelper',
-            'Hiya\\Helpers\\Collection'
-          ];
-          \$allOk = true;
-          foreach (\$classes as \$class) {
-            if (class_exists(\$class)) {
-              echo '' . \$class . ' found\n';
+          
+          // Function to find all PHP files
+          function findPhpFiles(\$dir) {
+            \$files = [];
+            \$iterator = new RecursiveIteratorIterator(
+              new RecursiveDirectoryIterator(\$dir, RecursiveDirectoryIterator::SKIP_DOTS)
+            );
+            foreach (\$iterator as \$file) {
+              if (\$file->getExtension() === 'php') {
+                \$files[] = \$file->getPathname();
+              }
+            }
+            return \$files;
+          }
+          
+          \$srcPath = __DIR__ . '/src';
+          \$files = findPhpFiles(\$srcPath);
+          
+          \$loaded = 0;
+          \$failed = 0;
+          
+          echo 'Found ' . count(\$files) . ' PHP files\n';
+          echo '------------------------\n';
+          
+          foreach (\$files as \$file) {
+            \$className = 'Hiya\\' . str_replace(
+              ['/src/', '/', '.php'], 
+              ['', '\\', ''], 
+              \$file
+            );
+            
+            if (class_exists(\$className)) {
+              echo '✅ ' . \$className . '\n';
+              \$loaded++;
             } else {
-              echo ' ' . \$class . ' not found\n';
-              \$allOk = false;
+              // Coba dengan nama class tanpa namespace
+              \$baseName = basename(\$file, '.php');
+              if (class_exists(\$baseName)) {
+                echo '✅ ' . \$baseName . '\n';
+                \$loaded++;
+              } else {
+                echo '❌ ' . \$className . '\n';
+                \$failed++;
+              }
             }
           }
-          if (!\$allOk) exit(1);
+          
+          echo '------------------------\n';
+          echo '✅ Loaded: ' . \$loaded . '\n';
+          echo '❌ Failed: ' . \$failed . '\n';
+          
+          if (\$failed > 0) exit(1);
         "
       shell: bash
     
     - name: Check required files
       run: |
         echo "Checking required files..."
-        files=("hiya.php" "autoload.php" "libs/yii/YiiBase.php")
-        for file in "${files[@]}"; do
-          if [ -f "$file" ]; then
-            echo " $file found"
-          else
-            echo " $file not found"
-          fi
-        done
+        
+        # Cek file wajib
+        if [ -f "hiya.php" ] && [ -f "autoload.php" ] && [ -d "src" ] && [ -f "libs/yii/YiiBase.php" ]; then
+          echo "  ✅ All required files found!"
+          echo "  ✅ hiya.php exists"
+          echo "  ✅ autoload.php exists"
+          echo "  ✅ src/ directory exists"
+          echo "  ✅ libs/yii/YiiBase.php exists"
+        else
+          echo "  ❌ Some required files missing!"
+          [ -f "hiya.php" ] || echo "  ❌ hiya.php not found"
+          [ -f "autoload.php" ] || echo "  ❌ autoload.php not found"
+          [ -d "src" ] || echo "  ❌ src/ directory not found"
+          [ -f "libs/yii/YiiBase.php" ] || echo "  ❌ libs/yii/YiiBase.php not found"
+          exit 1
+        fi
       shell: bash
     
     - name: Check directory structure
       run: |
-        echo "Checking directory structure..."
-        dirs=("src" "src/Base" "src/Helpers" "libs" "libs/yii")
-        for dir in "${dirs[@]}"; do
-          if [ -d "$dir" ]; then
-            echo " $dir exists"
-          else
-            echo " $dir not found"
-          fi
-        done
+        echo "📂 Directory Structure:"
+        echo "======================"
+        
+        # Check src and all subdirectories
+        if [ -d "src" ]; then
+          echo "✅ src/ (root)"
+          find src -type d -maxdepth 2 -not -path "*/\.*" | sort | while read -r dir; do
+            if [ "$dir" != "src" ]; then
+              count=$(find "$dir" -name "*.php" -maxdepth 1 2>/dev/null | wc -l)
+              echo "   📁 ${dir#src/} ($count PHP files)"
+            fi
+          done
+        else
+          echo "❌ src/ not found"
+        fi
+        
+        echo ""
+        
+        # Check libs and all subdirectories
+        if [ -d "libs" ]; then
+          echo "✅ libs/ (root)"
+          find libs -type d -maxdepth 2 -not -path "*/\.*" | sort | while read -r dir; do
+            if [ "$dir" != "libs" ]; then
+              count=$(find "$dir" -name "*.php" -maxdepth 1 2>/dev/null | wc -l)
+              echo "   📁 ${dir#libs/} ($count PHP files)"
+            fi
+          done
+        else
+          echo "❌ libs/ not found"
+        fi
       shell: bash
     
     - name: Simple PHP execution test
@@ -134,7 +200,7 @@ jobs:
     
     strategy:
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2']
+        php: ['7.4', '8.0', '8.1', '8.2','8.3','8.4','8.5']
     
     steps:
     - name: Checkout code
