@@ -33,6 +33,7 @@ spl_autoload_register(function ($className) {
             HIYA_PATH . '/src/Auth/' . $classFile . '.php',           // Auth
             HIYA_PATH . '/src/Queue/' . $classFile . '.php',          // Queue
             HIYA_PATH . '/src/Security/' . $classFile . '.php',       // Security
+            HIYA_PATH . '/src/Helpers/' . $classFile . '.php',       // Helpers
             HIYA_PATH . '/src/Logging/' . $classFile . '.php',        // Logging
             HIYA_PATH . '/src/Logging/views/' . $classFile . '.php',  // Logging views
             HIYA_PATH . '/src/Error/' . $classFile . '.php',        // Error
