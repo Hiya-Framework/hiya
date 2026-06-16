@@ -3,6 +3,8 @@
  * Hiya Web Log View Template - Debug Console with Persistent State
  * Features: All states (minimize, maximize, position, collapsed-side) saved to localStorage
  * 
+ * Security: localStorage only stores UI state, no sensitive data
+ * 
  * @var array $logs
  * @var array $appInfo
  * @var array $config
@@ -10,29 +12,29 @@
 ?>
 <style>
     :root {
-        --Hiya-primary: #3b82f6;
-        --Hiya-primary-dark: #2563eb;
-        --Hiya-success: #10b981;
-        --Hiya-warning: #f59e0b;
-        --Hiya-error: #ef4444;
-        --Hiya-bg: #ffffff;
-        --Hiya-bg-alt: #f8fafc;
-        --Hiya-border: #e2e8f0;
-        --Hiya-text: #1e293b;
-        --Hiya-text-muted: #64748b;
+        --hiya-primary: #3b82f6;
+        --hiya-primary-dark: #2563eb;
+        --hiya-success: #10b981;
+        --hiya-warning: #f59e0b;
+        --hiya-error: #ef4444;
+        --hiya-bg: #ffffff;
+        --hiya-bg-alt: #f8fafc;
+        --hiya-border: #e2e8f0;
+        --hiya-text: #1e293b;
+        --hiya-text-muted: #64748b;
     }
     
-    .Hiya-debug-bar {
+    .hiya-debug-bar {
         position: fixed;
         left: 0;
         right: 0;
         bottom: 0;
-        background: var(--Hiya-bg);
-        color: var(--Hiya-text);
+        background: var(--hiya-bg);
+        color: var(--hiya-text);
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
         font-size: 12px;
         z-index: 99999;
-        border-top: 3px solid var(--Hiya-primary);
+        border-top: 3px solid var(--hiya-primary);
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
         display: flex;
         flex-direction: column;
@@ -41,16 +43,16 @@
     }
     
     /* Position Top */
-    .Hiya-debug-bar.position-top {
+    .hiya-debug-bar.position-top {
         top: 0;
         bottom: auto;
         border-top: none;
-        border-bottom: 3px solid var(--Hiya-primary);
+        border-bottom: 3px solid var(--hiya-primary);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
     
-    /* Collapsed Side - Kecil ke kiri */
-    .Hiya-debug-bar.collapsed-side {
+    /* Collapsed Side - Collapsed to left */
+    .hiya-debug-bar.collapsed-side {
         left: 0;
         top: 50%;
         bottom: auto;
@@ -62,34 +64,34 @@
         max-width: 32px;
         border-radius: 0 8px 8px 0;
         border-top: none;
-        border-right: 3px solid var(--Hiya-primary);
+        border-right: 3px solid var(--hiya-primary);
         border-left: none;
         overflow: hidden;
         box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-        background: var(--Hiya-primary);
+        background: var(--hiya-primary);
         cursor: pointer;
         transition: all 0.2s ease;
     }
     
-    .Hiya-debug-bar.collapsed-side:hover {
+    .hiya-debug-bar.collapsed-side:hover {
         min-width: 36px;
         max-width: 36px;
-        background: var(--Hiya-primary-dark);
+        background: var(--hiya-primary-dark);
     }
     
-    .Hiya-debug-bar.collapsed-side .Hiya-log-content,
-    .Hiya-debug-bar.collapsed-side .Hiya-info-panel,
-    .Hiya-debug-bar.collapsed-side .Hiya-filter-bar,
-    .Hiya-debug-bar.collapsed-side .Hiya-debug-header {
+    .hiya-debug-bar.collapsed-side .hiya-log-content,
+    .hiya-debug-bar.collapsed-side .hiya-info-panel,
+    .hiya-debug-bar.collapsed-side .hiya-filter-bar,
+    .hiya-debug-bar.collapsed-side .hiya-debug-header {
         display: none !important;
     }
     
-    /* Tombol Expand yang lebih rapat */
-    .Hiya-expand-btn {
+    /* Expand Button */
+    .hiya-expand-btn {
         position: fixed;
         left: 0;
         bottom: 20px;
-        background: linear-gradient(135deg, var(--Hiya-primary) 0%, var(--Hiya-primary-dark) 100%);
+        background: linear-gradient(135deg, var(--hiya-primary) 0%, var(--hiya-primary-dark) 100%);
         color: white;
         border: none;
         border-radius: 0 8px 8px 0;
@@ -110,15 +112,15 @@
         margin: 0;
     }
 
-    .Hiya-expand-btn:hover {
+    .hiya-expand-btn:hover {
         min-width: 90px;
         padding-right: 12px;
         gap: 6px;
-        background: linear-gradient(135deg, var(--Hiya-primary-dark) 0%, var(--Hiya-primary) 100%);
+        background: linear-gradient(135deg, var(--hiya-primary-dark) 0%, var(--hiya-primary) 100%);
         box-shadow: 3px 0 12px rgba(59, 130, 246, 0.3);
     }
 
-    .Hiya-expand-btn .expand-text {
+    .hiya-expand-btn .expand-text {
         opacity: 0;
         width: 0;
         overflow: hidden;
@@ -128,29 +130,29 @@
         white-space: nowrap;
     }
 
-    .Hiya-expand-btn:hover .expand-text {
+    .hiya-expand-btn:hover .expand-text {
         opacity: 1;
         width: auto;
         margin-left: 4px;
     }
 
-    .Hiya-expand-btn .expand-icon {
+    .hiya-expand-btn .expand-icon {
         font-size: 12px;
         transition: transform 0.2s ease;
         line-height: 1;
     }
 
-    .Hiya-expand-btn:hover .expand-icon {
+    .hiya-expand-btn:hover .expand-icon {
         transform: translateX(3px);
     }
     
-    /* Sembunyikan expand button saat debug bar normal */
-    .Hiya-expand-btn.hidden {
+    /* Hide expand button when debug bar is normal */
+    .hiya-expand-btn.hidden {
         display: none;
     }
     
     /* Maximized/Fullscreen state */
-    .Hiya-debug-bar.maximized {
+    .hiya-debug-bar.maximized {
         position: fixed;
         top: 0 !important;
         left: 0;
@@ -164,38 +166,38 @@
         border-radius: 0;
     }
     
-    .Hiya-debug-bar.maximized .Hiya-log-content {
+    .hiya-debug-bar.maximized .hiya-log-content {
         max-height: calc(100vh - 200px);
     }
     
-    /* Minimized state (bottom bar kecil) */
-    .Hiya-debug-bar.minimized {
+    /* Minimized state (bottom bar minimized) */
+    .hiya-debug-bar.minimized {
         height: auto !important;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(8px);
     }
     
-    .Hiya-debug-bar.minimized .Hiya-log-content,
-    .Hiya-debug-bar.minimized .Hiya-info-panel,
-    .Hiya-debug-bar.minimized .Hiya-filter-bar {
+    .hiya-debug-bar.minimized .hiya-log-content,
+    .hiya-debug-bar.minimized .hiya-info-panel,
+    .hiya-debug-bar.minimized .hiya-filter-bar {
         display: none !important;
     }
     
-    .Hiya-debug-bar.minimized .Hiya-debug-header {
+    .hiya-debug-bar.minimized .hiya-debug-header {
         border-bottom: none;
         background: rgba(248, 250, 252, 0.9);
         padding: 6px 20px;
     }
     
-    .Hiya-debug-bar.minimized .Hiya-debug-stats span {
+    .hiya-debug-bar.minimized .hiya-debug-stats span {
         padding: 2px 8px;
         font-size: 10px;
     }
     
-    .Hiya-debug-header {
-        background: linear-gradient(135deg, var(--Hiya-bg-alt) 0%, #f1f5f9 100%);
+    .hiya-debug-header {
+        background: linear-gradient(135deg, var(--hiya-bg-alt) 0%, #f1f5f9 100%);
         padding: 10px 20px;
-        border-bottom: 1px solid var(--Hiya-border);
+        border-bottom: 1px solid var(--hiya-border);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -206,33 +208,33 @@
         transition: all 0.2s;
     }
     
-    .Hiya-debug-header:hover {
+    .hiya-debug-header:hover {
         background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
     }
     
-    .Hiya-debug-title {
+    .hiya-debug-title {
         display: flex;
         align-items: center;
         gap: 20px;
         flex-wrap: wrap;
     }
     
-    .Hiya-debug-title strong {
-        color: var(--Hiya-primary);
+    .hiya-debug-title strong {
+        color: var(--hiya-primary);
         font-size: 14px;
         display: flex;
         align-items: center;
         gap: 8px;
     }
     
-    .Hiya-debug-stats {
+    .hiya-debug-stats {
         display: flex;
         gap: 20px;
         font-size: 11px;
     }
     
-    .Hiya-debug-stats span {
-        color: var(--Hiya-text-muted);
+    .hiya-debug-stats span {
+        color: var(--hiya-text-muted);
         background: white;
         padding: 4px 10px;
         border-radius: 20px;
@@ -245,15 +247,15 @@
         white-space: nowrap;
     }
     
-    .Hiya-debug-actions {
+    .hiya-debug-actions {
         display: flex;
         gap: 10px;
     }
     
-    .Hiya-debug-btn {
+    .hiya-debug-btn {
         background: #ffffff;
-        border: 1px solid var(--Hiya-border);
-        color: var(--Hiya-text-muted);
+        border: 1px solid var(--hiya-border);
+        color: var(--hiya-text-muted);
         padding: 6px 14px;
         border-radius: 8px;
         cursor: pointer;
@@ -262,21 +264,21 @@
         transition: all 0.2s;
     }
     
-    .Hiya-debug-btn:hover {
-        background: var(--Hiya-primary);
-        border-color: var(--Hiya-primary);
+    .hiya-debug-btn:hover {
+        background: var(--hiya-primary);
+        border-color: var(--hiya-primary);
         color: white;
         transform: translateY(-1px);
     }
     
-    .Hiya-debug-btn.primary {
-        background: var(--Hiya-primary);
-        border-color: var(--Hiya-primary);
+    .hiya-debug-btn.primary {
+        background: var(--hiya-primary);
+        border-color: var(--hiya-primary);
         color: white;
     }
     
     /* Position Toggle Button Group */
-    .Hiya-pos-group {
+    .hiya-pos-group {
         display: inline-flex;
         gap: 4px;
         margin-left: 8px;
@@ -285,10 +287,10 @@
         padding: 2px;
     }
     
-    .Hiya-pos-btn {
+    .hiya-pos-btn {
         background: transparent;
         border: none;
-        color: var(--Hiya-text-muted);
+        color: var(--hiya-text-muted);
         padding: 4px 8px;
         border-radius: 6px;
         cursor: pointer;
@@ -297,30 +299,30 @@
         transition: all 0.2s;
     }
     
-    .Hiya-pos-btn:hover {
+    .hiya-pos-btn:hover {
         background: #e2e8f0;
     }
     
-    .Hiya-pos-btn.active {
-        background: var(--Hiya-primary);
+    .hiya-pos-btn.active {
+        background: var(--hiya-primary);
         color: white;
     }
     
-    .Hiya-filter-bar {
+    .hiya-filter-bar {
         padding: 12px 20px;
-        background: var(--Hiya-bg-alt);
+        background: var(--hiya-bg-alt);
         display: flex;
         gap: 20px;
         flex-wrap: wrap;
         align-items: center;
-        border-bottom: 1px solid var(--Hiya-border);
+        border-bottom: 1px solid var(--hiya-border);
         flex-shrink: 0;
     }
     
-    .Hiya-filter-search {
+    .hiya-filter-search {
         background: #ffffff;
-        border: 1px solid var(--Hiya-border);
-        color: var(--Hiya-text);
+        border: 1px solid var(--hiya-border);
+        color: var(--hiya-text);
         padding: 8px 14px;
         border-radius: 10px;
         font-size: 12px;
@@ -328,19 +330,19 @@
         transition: all 0.2s;
     }
     
-    .Hiya-filter-search:focus {
+    .hiya-filter-search:focus {
         outline: none;
-        border-color: var(--Hiya-primary);
+        border-color: var(--hiya-primary);
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
     
-    .Hiya-filter-group {
+    .hiya-filter-group {
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
     }
     
-    .Hiya-filter-checkbox {
+    .hiya-filter-checkbox {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -349,57 +351,57 @@
         padding: 4px 8px;
         background: white;
         border-radius: 20px;
-        border: 1px solid var(--Hiya-border);
+        border: 1px solid var(--hiya-border);
         transition: all 0.2s;
     }
     
-    .Hiya-filter-checkbox:hover {
-        background: var(--Hiya-bg-alt);
+    .hiya-filter-checkbox:hover {
+        background: var(--hiya-bg-alt);
     }
     
-    .Hiya-info-panel {
+    .hiya-info-panel {
         padding: 10px 20px;
         background: linear-gradient(135deg, #eff6ff 0%, #fef3c7 100%);
-        border-bottom: 1px solid var(--Hiya-border);
+        border-bottom: 1px solid var(--hiya-border);
         display: flex;
         gap: 24px;
         flex-wrap: wrap;
         font-size: 11px;
-        color: var(--Hiya-text-muted);
+        color: var(--hiya-text-muted);
         flex-shrink: 0;
     }
     
-    .Hiya-info-item {
+    .hiya-info-item {
         display: inline-flex;
         align-items: center;
         gap: 8px;
     }
     
-    .Hiya-info-label {
+    .hiya-info-label {
         color: #64748b;
         font-weight: 500;
     }
     
-    .Hiya-info-value {
-        color: var(--Hiya-primary);
+    .hiya-info-value {
+        color: var(--hiya-primary);
         font-weight: 600;
         font-family: monospace;
     }
     
-    .Hiya-log-content {
+    .hiya-log-content {
         overflow: auto;
         flex: 1;
-        background: var(--Hiya-bg);
+        background: var(--hiya-bg);
         max-height: calc(400px - 150px);
     }
     
-    .Hiya-log-table {
+    .hiya-log-table {
         width: 100%;
         border-collapse: collapse;
     }
     
-    .Hiya-log-table th {
-        background: var(--Hiya-bg-alt);
+    .hiya-log-table th {
+        background: var(--hiya-bg-alt);
         padding: 12px 16px;
         text-align: left;
         font-weight: 600;
@@ -408,28 +410,28 @@
         letter-spacing: 0.5px;
         position: sticky;
         top: 0;
-        border-bottom: 2px solid var(--Hiya-border);
-        color: var(--Hiya-text-muted);
+        border-bottom: 2px solid var(--hiya-border);
+        color: var(--hiya-text-muted);
     }
     
-    .Hiya-log-table td {
+    .hiya-log-table td {
         padding: 12px 16px;
-        border-bottom: 1px solid var(--Hiya-border);
+        border-bottom: 1px solid var(--hiya-border);
         vertical-align: top;
         font-size: 12px;
     }
     
-    .Hiya-log-table tr:hover {
-        background: var(--Hiya-bg-alt);
+    .hiya-log-table tr:hover {
+        background: var(--hiya-bg-alt);
     }
     
-    .Hiya-level-error { color: var(--Hiya-error); font-weight: 600; }
-    .Hiya-level-warning { color: var(--Hiya-warning); font-weight: 600; }
-    .Hiya-level-info { color: var(--Hiya-primary); font-weight: 600; }
-    .Hiya-level-trace { color: #6b7280; }
-    .Hiya-level-profile { color: var(--Hiya-success); }
+    .hiya-level-error { color: var(--hiya-error); font-weight: 600; }
+    .hiya-level-warning { color: var(--hiya-warning); font-weight: 600; }
+    .hiya-level-info { color: var(--hiya-primary); font-weight: 600; }
+    .hiya-level-trace { color: #6b7280; }
+    .hiya-level-profile { color: var(--hiya-success); }
     
-    .Hiya-badge {
+    .hiya-badge {
         display: inline-block;
         padding: 3px 10px;
         border-radius: 20px;
@@ -438,13 +440,13 @@
         text-transform: uppercase;
     }
     
-    .Hiya-badge-error { background: #fee2e2; color: var(--Hiya-error); }
-    .Hiya-badge-warning { background: #fef3c7; color: var(--Hiya-warning); }
-    .Hiya-badge-info { background: #dbeafe; color: var(--Hiya-primary); }
-    .Hiya-badge-trace { background: #f1f5f9; color: #6b7280; }
-    .Hiya-badge-profile { background: #d1fae5; color: var(--Hiya-success); }
+    .hiya-badge-error { background: #fee2e2; color: var(--hiya-error); }
+    .hiya-badge-warning { background: #fef3c7; color: var(--hiya-warning); }
+    .hiya-badge-info { background: #dbeafe; color: var(--hiya-primary); }
+    .hiya-badge-trace { background: #f1f5f9; color: #6b7280; }
+    .hiya-badge-profile { background: #d1fae5; color: var(--hiya-success); }
     
-    .Hiya-log-json {
+    .hiya-log-json {
         margin: 0;
         font-size: 11px;
         white-space: pre-wrap;
@@ -456,7 +458,7 @@
         font-family: 'Fira Code', monospace;
     }
     
-    .Hiya-log-sql {
+    .hiya-log-sql {
         margin: 0;
         font-size: 11px;
         white-space: pre-wrap;
@@ -465,10 +467,10 @@
         padding: 8px 12px;
         border-radius: 8px;
         font-family: 'Fira Code', monospace;
-        border-left: 3px solid var(--Hiya-success);
+        border-left: 3px solid var(--hiya-success);
     }
     
-    .Hiya-modal {
+    .hiya-modal {
         display: none;
         position: fixed;
         top: 0;
@@ -481,11 +483,11 @@
         justify-content: center;
     }
     
-    .Hiya-modal.show {
+    .hiya-modal.show {
         display: flex;
     }
     
-    .Hiya-modal-content {
+    .hiya-modal-content {
         background: white;
         border-radius: 16px;
         padding: 24px;
@@ -494,13 +496,13 @@
         box-shadow: 0 20px 35px rgba(0,0,0,0.2);
     }
     
-    .Hiya-modal-title {
+    .hiya-modal-title {
         font-size: 18px;
         font-weight: 700;
         margin-bottom: 16px;
     }
     
-    .Hiya-modal-buttons {
+    .hiya-modal-buttons {
         display: flex;
         gap: 12px;
         margin-top: 20px;
@@ -508,9 +510,9 @@
     }
     
     ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: var(--Hiya-bg-alt); border-radius: 10px; }
+    ::-webkit-scrollbar-track { background: var(--hiya-bg-alt); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--Hiya-primary); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--hiya-primary); }
     
     @keyframes fadeInOut {
         0% { opacity: 0; transform: translateY(20px); }
@@ -520,16 +522,16 @@
     }
 </style>
 
-<!-- Tombol Expand di kiri bawah (hanya muncul saat collapsed) -->
-<button id="Hiya-expand-btn" class="Hiya-expand-btn hidden">
+<!-- Expand button at bottom left (only appears when collapsed) -->
+<button id="hiya-expand-btn" class="hiya-expand-btn hidden">
     <span class="expand-text">Hiya Debug Console</span>
     <span class="expand-icon">▶</span>
 </button>
 
-<div class="Hiya-debug-bar" id="Hiya-debug-bar">
+<div class="hiya-debug-bar" id="hiya-debug-bar">
     <!-- Header -->
-    <div class="Hiya-debug-header" onclick="toggleHiyaDebug()">
-        <div class="Hiya-debug-title">
+    <div class="hiya-debug-header" onclick="toggleHiyaDebug()">
+        <div class="hiya-debug-title">
             <strong>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
@@ -538,58 +540,67 @@
                 </svg>
                 Hiya Debug Console
             </strong>
-            <div class="Hiya-debug-stats">
+            <div class="hiya-debug-stats">
                 <span>📋 <span id="log-count"><?php echo count($logs); ?></span> logs</span>
                 <span>⚡ <span id="exec-time"><?php echo $appInfo['execution_time']; ?></span>s</span>
                 <span>💾 <span id="mem-usage"><?php echo $appInfo['memory_usage']; ?></span></span>
-                <span style="background: #3b82f6; color: white; border-radius: 20px; padding: 4px 12px;">🚀 Hiya v<?php echo $appInfo['HIYA_version']; ?></span>
+                <span style="background: #3b82f6; color: white; border-radius: 20px; padding: 4px 12px;">🚀 Hiya v<?php echo $appInfo['hiya_version']; ?></span>
                 <span>🎨 <?php echo $appInfo['environment']; ?></span>
             </div>
-            <div class="Hiya-pos-group" onclick="event.stopPropagation()">
-                <button class="Hiya-pos-btn" data-pos="bottom" title="Bottom Position">⬇️</button>
-                <button class="Hiya-pos-btn" data-pos="top" title="Top Position">⬆️</button>
+            <div class="hiya-pos-group" onclick="event.stopPropagation()">
+                <button class="hiya-pos-btn" data-pos="bottom" title="Bottom Position">⬇️</button>
+                <button class="hiya-pos-btn" data-pos="top" title="Top Position">⬆️</button>
             </div>
         </div>
-        <div class="Hiya-debug-actions" onclick="event.stopPropagation()">
-            <button class="Hiya-debug-btn" id="collapse-side-btn" title="Collapse to left side (Ctrl+Shift+S)">◀ Collapse</button>
-            <button class="Hiya-debug-btn" onclick="showExportModal()">📤 Export</button>
-            <button class="Hiya-debug-btn" id="btn-maximize" onclick="toggleMaximize()" title="Maximize">🗖 Maximize</button>
-            <button class="Hiya-debug-btn primary" id="Hiya-debug-toggle" onclick="toggleHiyaDebug()">− Minimize</button>
-            <button class="Hiya-debug-btn" onclick="clearHiyaDebug()">🗑 Clear</button>
+        <div class="hiya-debug-actions" onclick="event.stopPropagation()">
+            <button class="hiya-debug-btn" id="collapse-side-btn" title="Collapse to left side (Ctrl+Shift+S)">◀ Collapse</button>
+            <button class="hiya-debug-btn" onclick="showExportModal()">📤 Export</button>
+            <button class="hiya-debug-btn" id="btn-maximize" onclick="toggleMaximize()" title="Maximize">🗖 Maximize</button>
+            <button class="hiya-debug-btn primary" id="hiya-debug-toggle" onclick="toggleHiyaDebug()">− Minimize</button>
+            <button class="hiya-debug-btn" onclick="clearHiyaDebug()">🗑 Clear</button>
         </div>
     </div>
     
     <!-- Info Panel -->
-    <div class="Hiya-info-panel">
-        <div class="Hiya-info-item">
-            <span class="Hiya-info-label">📄 Request:</span>
-            <span class="Hiya-info-value"><?php echo $appInfo['method']; ?> <?php echo htmlspecialchars($appInfo['url']); ?></span>
+    <div class="hiya-info-panel">
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">📄 Request:</span>
+            <span class="hiya-info-value"><?php echo $appInfo['method']; ?> <?php echo htmlspecialchars($appInfo['url']); ?></span>
         </div>
-        <div class="Hiya-info-item">
-            <span class="Hiya-info-label">🌐 IP:</span>
-            <span class="Hiya-info-value"><?php echo $appInfo['ip']; ?></span>
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">🌐 IP:</span>
+            <span class="hiya-info-value"><?php echo $appInfo['ip']; ?></span>
         </div>
-        <div class="Hiya-info-item">
-            <span class="Hiya-info-label">🐘 PHP:</span>
-            <span class="Hiya-info-value"><?php echo $appInfo['php_version']; ?></span>
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">🐘 PHP:</span>
+            <span class="hiya-info-value"><?php echo $appInfo['php_version']; ?></span>
         </div>
-        <div class="Hiya-info-item">
-            <span class="Hiya-info-label">🚀 Hiya Framework:</span>
-            <span class="Hiya-info-value"><?php echo $appInfo['HIYA_version']; ?></span>
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">🚀 Hiya:</span>
+            <span class="hiya-info-value">v<?php echo $appInfo['hiya_version']; ?></span>
         </div>
-        <div class="Hiya-info-item">
-            <span class="Hiya-info-label">💾 Peak:</span>
-            <span class="Hiya-info-value"><?php echo $appInfo['memory_peak']; ?></span>
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">🖥️ OS:</span>
+            <span class="hiya-info-value"><?php echo isset($appInfo['operating_system']) ? htmlspecialchars($appInfo['operating_system']) : php_uname('s') . ' ' . php_uname('r'); ?></span>
         </div>
-        <div class="Hiya-info-item">
-            <span class="Hiya-info-label" id="live-time-label">⏱️ Live:</span>
-            <span class="Hiya-info-value" id="live-time">0s</span>
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">🌐 Server:</span>
+            <span class="hiya-info-value"><?php echo isset($appInfo['server_software']) ? htmlspecialchars($appInfo['server_software']) : ($_SERVER['SERVER_SOFTWARE'] ?? 'Unknown'); ?></span>
         </div>
-        <div class="Hiya-info-item">
-            <span class="Hiya-info-label">🔗</span>
-            <span class="Hiya-info-value">
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">💾 Peak:</span>
+            <span class="hiya-info-value"><?php echo $appInfo['memory_peak']; ?></span>
+        </div>
+        <div class="hiya-info-item">
+            <span class="hiya-info-label" id="live-time-label">⏱️ Live:</span>
+            <span class="hiya-info-value" id="live-time">0s</span>
+        </div>
+        <div class="hiya-info-item">
+            <span class="hiya-info-label">🔗</span>
+            <span class="hiya-info-value">
                 <a href="https://www.taktikspace.com/hiya" 
                 target="_blank" 
+                rel="noopener noreferrer"
                 style="color: inherit; text-decoration: none;"
                 title="Hiya Framework Website">
                     www.taktikspace.com/hiya
@@ -600,24 +611,24 @@
     
     <!-- Filter Bar -->
     <?php if ($config['enableSearch']): ?>
-    <div class="Hiya-filter-bar">
-        <input type="text" id="Hiya-log-search" class="Hiya-filter-search" placeholder="🔍 Search by keyword, category, or message...">
-        <div class="Hiya-filter-group" id="Hiya-level-filters">
-            <label class="Hiya-filter-checkbox"><input type="checkbox" value="error" checked> 🔴 Error</label>
-            <label class="Hiya-filter-checkbox"><input type="checkbox" value="warning" checked> 🟡 Warning</label>
-            <label class="Hiya-filter-checkbox"><input type="checkbox" value="info" checked> 🔵 Info</label>
-            <label class="Hiya-filter-checkbox"><input type="checkbox" value="trace" checked> ⚪ Trace</label>
-            <label class="Hiya-filter-checkbox"><input type="checkbox" value="profile" checked> 🟢 Profile</label>
+    <div class="hiya-filter-bar">
+        <input type="text" id="hiya-log-search" class="hiya-filter-search" placeholder="🔍 Search by keyword, category, or message...">
+        <div class="hiya-filter-group" id="hiya-level-filters">
+            <label class="hiya-filter-checkbox"><input type="checkbox" value="error" checked> 🔴 Error</label>
+            <label class="hiya-filter-checkbox"><input type="checkbox" value="warning" checked> 🟡 Warning</label>
+            <label class="hiya-filter-checkbox"><input type="checkbox" value="info" checked> 🔵 Info</label>
+            <label class="hiya-filter-checkbox"><input type="checkbox" value="trace" checked> ⚪ Trace</label>
+            <label class="hiya-filter-checkbox"><input type="checkbox" value="profile" checked> 🟢 Profile</label>
         </div>
-        <button class="Hiya-debug-btn" onclick="resetFilters()">Reset Filters</button>
-        <button class="Hiya-debug-btn" onclick="selectAllLevels()">Select All</button>
-        <button class="Hiya-debug-btn" onclick="deselectAllLevels()">Deselect All</button>
+        <button class="hiya-debug-btn" onclick="resetFilters()">Reset Filters</button>
+        <button class="hiya-debug-btn" onclick="selectAllLevels()">Select All</button>
+        <button class="hiya-debug-btn" onclick="deselectAllLevels()">Deselect All</button>
     </div>
     <?php endif; ?>
     
     <!-- Log Table -->
-    <div id="Hiya-debug-content" class="Hiya-log-content">
-        <table class="Hiya-log-table">
+    <div id="hiya-debug-content" class="hiya-log-content">
+        <table class="hiya-log-table">
             <thead>
                 <tr>
                     <th style="width: 80px">Level</th>
@@ -630,16 +641,16 @@
                     <?php endif; ?>
                 </tr>
             </thead>
-            <tbody id="Hiya-log-tbody">
+            <tbody id="hiya-log-tbody">
                 <?php foreach ($logs as $log): ?>
                 <tr data-level="<?php echo $log['level']; ?>" 
                     data-category="<?php echo htmlspecialchars($log['category']); ?>"
                     data-search="<?php echo htmlspecialchars(strip_tags($log['message_raw'])); ?>"
                     data-time="<?php echo strtotime($log['time_formatted']); ?>">
-                    <td><span class="Hiya-badge Hiya-badge-<?php echo $log['level']; ?>"><?php echo strtoupper($log['level']); ?></span></td>
-                    <td class="Hiya-level-<?php echo $log['level']; ?>"><?php echo date('H:i:s', strtotime($log['time_formatted'])); ?></td>
-                    <td class="Hiya-level-<?php echo $log['level']; ?>"><?php echo $log['relative_time']; ?></td>
-                    <td class="Hiya-level-<?php echo $log['level']; ?>"><?php echo htmlspecialchars($log['category']); ?></td>
+                    <td><span class="hiya-badge hiya-badge-<?php echo $log['level']; ?>"><?php echo strtoupper($log['level']); ?></span></td>
+                    <td class="hiya-level-<?php echo $log['level']; ?>"><?php echo date('H:i:s', strtotime($log['time_formatted'])); ?></td>
+                    <td class="hiya-level-<?php echo $log['level']; ?>"><?php echo $log['relative_time']; ?></td>
+                    <td class="hiya-level-<?php echo $log['level']; ?>"><?php echo htmlspecialchars($log['category']); ?></td>
                     <td><?php echo $log['message']; ?></td>
                     <?php if ($config['showMemory']): ?>
                     <td><?php echo $log['memory_formatted']; ?></td>
@@ -652,65 +663,83 @@
 </div>
 
 <!-- Export Modal -->
-<div id="export-modal" class="Hiya-modal">
-    <div class="Hiya-modal-content">
-        <div class="Hiya-modal-title">📤 Export Logs</div>
-        <div class="Hiya-filter-group" style="margin-bottom: 16px;">
-            <label class="Hiya-filter-checkbox"><input type="checkbox" id="export-all" checked> All visible logs</label>
-            <label class="Hiya-filter-checkbox"><input type="checkbox" id="export-json"> JSON format</label>
-            <label class="Hiya-filter-checkbox"><input type="checkbox" id="export-csv"> CSV format</label>
+<div id="export-modal" class="hiya-modal">
+    <div class="hiya-modal-content">
+        <div class="hiya-modal-title">📤 Export Logs</div>
+        <div class="hiya-filter-group" style="margin-bottom: 16px;">
+            <label class="hiya-filter-checkbox"><input type="checkbox" id="export-all" checked> All visible logs</label>
+            <label class="hiya-filter-checkbox"><input type="checkbox" id="export-json"> JSON format</label>
+            <label class="hiya-filter-checkbox"><input type="checkbox" id="export-csv"> CSV format</label>
         </div>
-        <div class="Hiya-modal-buttons">
-            <button class="Hiya-debug-btn" onclick="closeExportModal()">Cancel</button>
-            <button class="Hiya-debug-btn primary" onclick="exportLogs()">Export</button>
+        <div class="hiya-modal-buttons">
+            <button class="hiya-debug-btn" onclick="closeExportModal()">Cancel</button>
+            <button class="hiya-debug-btn primary" onclick="exportLogs()">Export</button>
         </div>
     </div>
 </div>
 
 <script>
-    // State variables
+    // State variables (UI only, no sensitive data)
     let isMinimized = false;
     let isMaximized = false;
     let isCollapsedSide = false;
     let currentPosition = 'bottom';
     let startTime = Date.now();
     
-    const debugBar = document.getElementById('Hiya-debug-bar');
-    const expandBtn = document.getElementById('Hiya-expand-btn');
+    const debugBar = document.getElementById('hiya-debug-bar');
+    const expandBtn = document.getElementById('hiya-expand-btn');
     const collapseSideBtn = document.getElementById('collapse-side-btn');
     const btnMaximize = document.getElementById('btn-maximize');
-    const toggleBtn = document.getElementById('Hiya-debug-toggle');
-    const posButtons = document.querySelectorAll('.Hiya-pos-btn');
+    const toggleBtn = document.getElementById('hiya-debug-toggle');
+    const posButtons = document.querySelectorAll('.hiya-pos-btn');
     
-    // ============ PERSISTENT STATE MANAGEMENT ============
+    // ============ PERSISTENT STATE MANAGEMENT (UI only, no sensitive data) ============
     
     function loadSavedStates() {
-        const savedCollapsedSide = localStorage.getItem('HIYA_debug_collapsed_side');
-        if (savedCollapsedSide !== null) {
-            isCollapsedSide = savedCollapsedSide === 'true';
-        } else {
+        try {
+            const savedCollapsedSide = localStorage.getItem('hiya_debug_collapsed_side');
+            if (savedCollapsedSide !== null) {
+                isCollapsedSide = savedCollapsedSide === 'true';
+            } else {
+                isCollapsedSide = false;
+            }
+            
+            const savedMinimized = localStorage.getItem('hiya_debug_minimized');
+            if (savedMinimized !== null) {
+                isMinimized = savedMinimized === 'true';
+            } else {
+                isMinimized = <?php echo $config['collapsedByDefault'] ? 'true' : 'false'; ?>;
+            }
+            
+            const savedMaximized = localStorage.getItem('hiya_debug_maximized');
+            if (savedMaximized !== null) {
+                isMaximized = savedMaximized === 'true';
+            } else {
+                isMaximized = false;
+            }
+            
+            const savedPosition = localStorage.getItem('hiya_debug_position');
+            if (savedPosition && (savedPosition === 'bottom' || savedPosition === 'top')) {
+                currentPosition = savedPosition;
+            } else {
+                currentPosition = 'bottom';
+            }
+        } catch (e) {
+            // localStorage access denied or error - use defaults
+            console.warn('localStorage access denied or error:', e);
             isCollapsedSide = false;
-        }
-        
-        const savedMinimized = localStorage.getItem('HIYA_debug_minimized');
-        if (savedMinimized !== null) {
-            isMinimized = savedMinimized === 'true';
-        } else {
             isMinimized = <?php echo $config['collapsedByDefault'] ? 'true' : 'false'; ?>;
-        }
-        
-        const savedMaximized = localStorage.getItem('HIYA_debug_maximized');
-        if (savedMaximized !== null) {
-            isMaximized = savedMaximized === 'true';
-        } else {
             isMaximized = false;
-        }
-        
-        const savedPosition = localStorage.getItem('HIYA_debug_position');
-        if (savedPosition && (savedPosition === 'bottom' || savedPosition === 'top')) {
-            currentPosition = savedPosition;
-        } else {
             currentPosition = 'bottom';
+        }
+    }
+    
+    function saveToLocalStorage(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            // localStorage full or access denied - silently ignore
+            console.debug('Unable to save to localStorage:', e);
         }
     }
     
@@ -768,9 +797,9 @@
         
         if (expandBtn) expandBtn.classList.remove('hidden');
         
-        localStorage.setItem('HIYA_debug_collapsed_side', 'true');
-        localStorage.setItem('HIYA_debug_minimized', 'false');
-        localStorage.setItem('HIYA_debug_maximized', 'false');
+        saveToLocalStorage('hiya_debug_collapsed_side', 'true');
+        saveToLocalStorage('hiya_debug_minimized', 'false');
+        saveToLocalStorage('hiya_debug_maximized', 'false');
     }
     
     function expandFromSide() {
@@ -779,7 +808,7 @@
         
         if (expandBtn) expandBtn.classList.add('hidden');
         
-        const savedPosition = localStorage.getItem('HIYA_debug_position') || 'bottom';
+        const savedPosition = localStorage.getItem('hiya_debug_position') || 'bottom';
         currentPosition = savedPosition;
         
         if (currentPosition === 'top') {
@@ -788,7 +817,7 @@
             debugBar.classList.remove('position-top');
         }
         
-        localStorage.setItem('HIYA_debug_collapsed_side', 'false');
+        saveToLocalStorage('hiya_debug_collapsed_side', 'false');
         showToast('📂 Console expanded');
     }
     
@@ -803,9 +832,9 @@
     }
     
     function applyMinimize() {
-        const content = document.getElementById('Hiya-debug-content');
-        const infoPanel = document.querySelector('.Hiya-info-panel');
-        const filterBar = document.querySelector('.Hiya-filter-bar');
+        const content = document.getElementById('hiya-debug-content');
+        const infoPanel = document.querySelector('.hiya-info-panel');
+        const filterBar = document.querySelector('.hiya-filter-bar');
         
         debugBar.classList.add('minimized');
         debugBar.classList.remove('maximized');
@@ -819,14 +848,14 @@
             btnMaximize.classList.remove('primary');
         }
         
-        localStorage.setItem('HIYA_debug_minimized', 'true');
-        localStorage.setItem('HIYA_debug_maximized', 'false');
+        saveToLocalStorage('hiya_debug_minimized', 'true');
+        saveToLocalStorage('hiya_debug_maximized', 'false');
     }
     
     function applyExpand() {
-        const content = document.getElementById('Hiya-debug-content');
-        const infoPanel = document.querySelector('.Hiya-info-panel');
-        const filterBar = document.querySelector('.Hiya-filter-bar');
+        const content = document.getElementById('hiya-debug-content');
+        const infoPanel = document.querySelector('.hiya-info-panel');
+        const filterBar = document.querySelector('.hiya-filter-bar');
         
         debugBar.classList.remove('minimized', 'collapsed-side');
         if (content) content.style.display = 'block';
@@ -834,7 +863,7 @@
         if (filterBar) filterBar.style.display = 'flex';
         if (toggleBtn) toggleBtn.innerHTML = '− Minimize';
         
-        localStorage.setItem('HIYA_debug_minimized', 'false');
+        saveToLocalStorage('hiya_debug_minimized', 'false');
     }
     
     function toggleHiyaDebug() {
@@ -850,7 +879,7 @@
                     btnMaximize.innerHTML = '🗖 Maximize';
                     btnMaximize.classList.remove('primary');
                 }
-                localStorage.setItem('HIYA_debug_maximized', 'false');
+                saveToLocalStorage('hiya_debug_maximized', 'false');
             }
             showToast('📁 Console minimized');
         } else {
@@ -875,14 +904,14 @@
             isMaximized = false;
             btnMaximize.innerHTML = '🗖 Maximize';
             btnMaximize.classList.remove('primary');
-            localStorage.setItem('HIYA_debug_maximized', 'false');
+            saveToLocalStorage('hiya_debug_maximized', 'false');
             showToast('⬚ Restored normal size');
         } else {
             debugBar.classList.add('maximized');
             isMaximized = true;
             btnMaximize.innerHTML = '✕ Exit';
             btnMaximize.classList.add('primary');
-            localStorage.setItem('HIYA_debug_maximized', 'true');
+            saveToLocalStorage('hiya_debug_maximized', 'true');
             showToast('🗖 Maximized view - Press Esc to exit');
         }
     }
@@ -906,12 +935,12 @@
             }
         });
         
-        localStorage.setItem('HIYA_debug_position', position);
+        saveToLocalStorage('hiya_debug_position', position);
         showToast(`📍 Position changed to ${position === 'bottom' ? 'Bottom' : 'Top'}`);
     }
     
     function clearHiyaDebug() {
-        var tbody = document.getElementById('Hiya-log-tbody');
+        var tbody = document.getElementById('hiya-log-tbody');
         if (tbody) {
             tbody.innerHTML = '';
             document.getElementById('log-count').textContent = '0';
@@ -920,8 +949,8 @@
     }
     
     function resetFilters() {
-        var searchInput = document.getElementById('Hiya-log-search');
-        var levelCheckboxes = document.querySelectorAll('#Hiya-level-filters input');
+        var searchInput = document.getElementById('hiya-log-search');
+        var levelCheckboxes = document.querySelectorAll('#hiya-level-filters input');
         
         if (searchInput) searchInput.value = '';
         levelCheckboxes.forEach(function(cb) {
@@ -933,12 +962,12 @@
     }
     
     function selectAllLevels() {
-        document.querySelectorAll('#Hiya-level-filters input').forEach(cb => cb.checked = true);
+        document.querySelectorAll('#hiya-level-filters input').forEach(cb => cb.checked = true);
         filterLogs();
     }
     
     function deselectAllLevels() {
-        document.querySelectorAll('#Hiya-level-filters input').forEach(cb => cb.checked = false);
+        document.querySelectorAll('#hiya-level-filters input').forEach(cb => cb.checked = false);
         filterLogs();
     }
     
@@ -955,7 +984,7 @@
         var exportJson = document.getElementById('export-json').checked;
         var exportCsv = document.getElementById('export-csv').checked;
         
-        var rows = document.querySelectorAll('#Hiya-log-tbody tr');
+        var rows = document.querySelectorAll('#hiya-log-tbody tr');
         var logs = [];
         
         rows.forEach(function(row) {
@@ -975,7 +1004,7 @@
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
-            a.download = 'Hiya-logs-' + new Date().toISOString() + '.json';
+            a.download = 'hiya-logs-' + new Date().toISOString() + '.json';
             a.click();
             URL.revokeObjectURL(url);
         } else if (exportCsv) {
@@ -988,7 +1017,7 @@
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
-            a.download = 'Hiya-logs-' + new Date().toISOString() + '.csv';
+            a.download = 'hiya-logs-' + new Date().toISOString() + '.csv';
             a.click();
             URL.revokeObjectURL(url);
         } else {
@@ -1022,8 +1051,8 @@
     }
     
     // Filter functionality
-    var searchInput = document.getElementById('Hiya-log-search');
-    var levelCheckboxes = document.querySelectorAll('#Hiya-level-filters input');
+    var searchInput = document.getElementById('hiya-log-search');
+    var levelCheckboxes = document.querySelectorAll('#hiya-level-filters input');
     
     function filterLogs() {
         var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
@@ -1032,7 +1061,7 @@
             if (cb.checked) activeLevels.push(cb.value);
         });
         
-        var rows = document.querySelectorAll('#Hiya-log-tbody tr');
+        var rows = document.querySelectorAll('#hiya-log-tbody tr');
         var visibleCount = 0;
         
         rows.forEach(function(row) {

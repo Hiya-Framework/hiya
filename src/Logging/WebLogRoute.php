@@ -2,7 +2,7 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Error\WebLogRoute
+ * @package Hiya\Error
  * @since 1.0
  */
 
@@ -219,6 +219,92 @@ class WebLogRoute extends CWebLogRoute
     }
     
     /**
+     * Get Operating System information
+     * @return string
+     */
+    protected function getOperatingSystem()
+    {
+        $os = PHP_OS;
+        $osName = '';
+        
+        switch (true) {
+            case strpos($os, 'WIN') !== false:
+                $osName = 'Windows';
+                // Get Windows version if possible
+                if (function_exists('php_uname')) {
+                    $version = php_uname('r');
+                    $osName .= ' ' . $version;
+                }
+                break;
+            case strpos($os, 'Linux') !== false:
+                $osName = 'Linux';
+                // Try to get distribution info
+                if (file_exists('/etc/os-release')) {
+                    $release = @parse_ini_file('/etc/os-release');
+                    if ($release && isset($release['PRETTY_NAME'])) {
+                        $osName = $release['PRETTY_NAME'];
+                    }
+                } else {
+                    $osName .= ' ' . php_uname('r');
+                }
+                break;
+            case strpos($os, 'Darwin') !== false:
+                $osName = 'macOS';
+                $version = php_uname('r');
+                $osName .= ' ' . $version;
+                break;
+            case strpos($os, 'FreeBSD') !== false:
+                $osName = 'FreeBSD';
+                break;
+            case strpos($os, 'OpenBSD') !== false:
+                $osName = 'OpenBSD';
+                break;
+            case strpos($os, 'NetBSD') !== false:
+                $osName = 'NetBSD';
+                break;
+            case strpos($os, 'SunOS') !== false:
+                $osName = 'Solaris';
+                break;
+            default:
+                $osName = $os;
+        }
+        
+        // Add architecture
+        $arch = php_uname('m');
+        if ($arch) {
+            $osName .= ' (' . $arch . ')';
+        }
+        
+        return $osName;
+    }
+    
+    /**
+     * Get Server Software information
+     * @return string
+     */
+    protected function getServerSoftware()
+    {
+        $server = $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown';
+        
+        // Simplify common server names
+        if (strpos($server, 'Apache') !== false) {
+            preg_match('/Apache\/(\d+\.\d+)/', $server, $matches);
+            $version = isset($matches[1]) ? ' ' . $matches[1] : '';
+            return 'Apache' . $version;
+        }
+        if (strpos($server, 'nginx') !== false) {
+            preg_match('/nginx\/(\d+\.\d+\.\d+)/', $server, $matches);
+            $version = isset($matches[1]) ? ' ' . $matches[1] : '';
+            return 'Nginx' . $version;
+        }
+        if (strpos($server, 'Microsoft-IIS') !== false) {
+            return 'IIS';
+        }
+        
+        return $server;
+    }
+    
+    /**
      * Get application information
      * @return array
      */
@@ -227,14 +313,15 @@ class WebLogRoute extends CWebLogRoute
         $request = Yii::app()->getRequest();
         
         // Get Hiya version if available
-        $HiyaVersion = defined('HIYA_VERSION') ? HIYA_VERSION : '2.0.0';
+        $hiyaVersion = defined('HIYA_VERSION') ? HIYA_VERSION : '1.0.0';
         
         return [
             'name' => Yii::app()->name,
             'environment' => YII_DEBUG ? 'Development' : 'Production',
             'php_version' => PHP_VERSION,
-            'yii_version' => Yii::getVersion(),
-            'HIYA_version' => $HiyaVersion,  // Added HIYA_version
+            'hiya_version' => $hiyaVersion,
+            'operating_system' => $this->getOperatingSystem(),
+            'server_software' => $this->getServerSoftware(),
             'url' => $request->getRequestUri(),
             'method' => $request->getRequestType(),
             'ip' => $request->getUserHostAddress(),
@@ -254,17 +341,17 @@ class WebLogRoute extends CWebLogRoute
         // Try to decode JSON
         $json = json_decode($message, true);
         if ($json !== null && json_last_error() === JSON_ERROR_NONE) {
-            return '<pre class="Hiya-log-json">' . htmlspecialchars(json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</pre>';
+            return '<pre class="hiya-log-json">' . htmlspecialchars(json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</pre>';
         }
         
         // Check if it's SQL query
         if (preg_match('/^(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|REPLACE)/i', trim($message))) {
-            return '<pre class="Hiya-log-sql">' . htmlspecialchars($message) . '</pre>';
+            return '<pre class="hiya-log-sql">' . htmlspecialchars($message) . '</pre>';
         }
         
         // Check if it's stack trace
         if (strpos($message, '#0 ') !== false || preg_match('/\s+at\s+[\w\\\\]+::/', $message)) {
-            return '<pre class="Hiya-log-trace">' . htmlspecialchars($message) . '</pre>';
+            return '<pre class="hiya-log-trace">' . htmlspecialchars($message) . '</pre>';
         }
         
         return nl2br(htmlspecialchars($message));
@@ -351,9 +438,9 @@ class WebLogRoute extends CWebLogRoute
         // Try to find view file in multiple locations
         $viewPaths = [
             // Application views
-            Yii::getPathOfAlias('application.views.log') . '/Hiya-log.php',
+            Yii::getPathOfAlias('application.views.log') . '/hiya-log.php',
             // Hiya core views
-            dirname(__FILE__) . '/views/Hiya-log.php',
+            dirname(__FILE__) . '/views/hiya-log.php',
             // Fallback inline view
             null
         ];
@@ -385,10 +472,17 @@ class WebLogRoute extends CWebLogRoute
         $appInfo = $data['appInfo'];
         $config = $data['config'];
         ?>
-        <div class="Hiya-debug-bar" style="position:fixed;bottom:0;left:0;right:0;background:#1e1e2e;color:#e0e0e0;font-family:monospace;font-size:12px;z-index:99999;border-top:2px solid #3b82f6;max-height:300px;overflow:auto;">
-            <div style="background:#2a2a3e;padding:8px;font-weight:bold;display:flex;justify-content:space-between;">
+        <div class="hiya-debug-bar" style="position:fixed;bottom:0;left:0;right:0;background:#1e1e2e;color:#e0e0e0;font-family:monospace;font-size:12px;z-index:99999;border-top:2px solid #3b82f6;max-height:300px;overflow:auto;">
+            <div style="background:#2a2a3e;padding:8px;font-weight:bold;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
                 <span>🔍 Hiya Debug Console (<?php echo count($logs); ?> logs)</span>
-                <button onclick="this.parentElement.parentElement.style.display='none'" style="background:#3e3e5e;border:none;color:#fff;padding:2px 8px;cursor:pointer;">×</button>
+                <div style="display:flex;gap:15px;flex-wrap:wrap;">
+                    <span>🖥️ OS: <?php echo htmlspecialchars($appInfo['operating_system'] ?? 'Unknown'); ?></span>
+                    <span>🌐 Server: <?php echo htmlspecialchars($appInfo['server_software'] ?? 'Unknown'); ?></span>
+                    <span>🐘 PHP: <?php echo $appInfo['php_version']; ?></span>
+                    <span>🚀 Hiya: <?php echo $appInfo['hiya_version']; ?></span>
+                    <span>💾 Mem: <?php echo $appInfo['memory_usage']; ?></span>
+                    <button onclick="this.parentElement.parentElement.style.display='none'" style="background:#3e3e5e;border:none;color:#fff;padding:2px 8px;cursor:pointer;">×</button>
+                </div>
             </div>
             <table style="width:100%;border-collapse:collapse;">
                 <thead style="background:#25253a;">
