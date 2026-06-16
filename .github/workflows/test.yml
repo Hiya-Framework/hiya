@@ -1,0 +1,54 @@
+name: Test Hiya Framework
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php }}
+        extensions: curl, json, mbstring, openssl, pdo, pdo_mysql, pdo_sqlite, session, tokenizer, xml, zip
+        tools: composer:v2
+    
+    - name: Display PHP & OS info
+      run: |
+        php -v
+        echo "OS: ${{ matrix.os }}"
+        echo "PHP: ${{ matrix.php }}"
+    
+    - name: Validate composer.json
+      run: composer validate
+    
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
+    
+    - name: Check syntax errors
+      run: |
+        find src -name "*.php" -exec php -l {} \; 2>&1 | grep -v "No syntax errors"
+    
+    - name: Run tests (if any)
+      run: |
+        if [ -f "phpunit.xml" ] || [ -f "phpunit.xml.dist" ]; then
+          vendor/bin/phpunit --configuration phpunit.xml.dist
+        else
+          echo "No tests found, skipping..."
+        fi
+      shell: bash
