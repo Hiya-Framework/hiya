@@ -2,11 +2,11 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\Session
+ * @package Hiya\Component\Session
  * @since 1.0
  */
 
-namespace Hiya\Components;
+namespace Hiya\Component;
 
 class Session extends \CHttpSession
 {
@@ -26,22 +26,31 @@ class Session extends \CHttpSession
     const USER_PREFIX = '_user_';
     
     /**
-     * CSRF token key
+     * CSRF token key (not encrypted)
      */
     const CSRF_KEY = '_csrf_token';
+    
+    /**
+     * Prefix for encrypted session keys
+     */
+    const ENCRYPTED_PREFIX = '_enc_';
     
     /**
      * Session config options
      */
     protected $config = [
-        'secure' => false,           // Force secure cookie (HTTPS only)
+        'secure' => true,           // Force secure cookie (HTTPS only)
         'httponly' => true,          // Prevent JavaScript access
         'samesite' => 'Lax',         // CSRF protection: Strict, Lax, None
         'lifetime' => 0,             // 0 = until browser closes
-        'encrypt_user_data' => false, // Encrypt user data in session
+        'encrypt_all' => true,       // Encrypt ALL session data (default: true)
         'regenerate_timeout' => 300,  // Regenerate session ID every N seconds
         'csrf_regenerate' => true,    // Regenerate CSRF token on each request
-        'encryption_key' => null,     // Custom encryption key (set via session->encryption_key)
+        'encryption_key' => null,     // Custom encryption key
+        'encrypt_exceptions' => [    // Keys that should NOT be encrypted
+            '_last_regeneration',
+            '_encryption_key',
+        ],
     ];
     
     /**
@@ -77,8 +86,11 @@ class Session extends \CHttpSession
         if (getenv('SESSION_LIFETIME')) {
             $this->config['lifetime'] = (int)getenv('SESSION_LIFETIME');
         }
-        if (getenv('SESSION_ENCRYPT') !== false) {
-            $this->config['encrypt_user_data'] = getenv('SESSION_ENCRYPT') === 'true';
+        if (getenv('SESSION_ENCRYPT_ALL') !== false) {
+            $this->config['encrypt_all'] = getenv('SESSION_ENCRYPT_ALL') === 'true';
+        }
+        if (getenv('APP_KEY')) {
+            $this->config['encryption_key'] = getenv('APP_KEY');
         }
     }
     
@@ -117,23 +129,29 @@ class Session extends \CHttpSession
         } elseif ($this->config['csrf_regenerate']) {
             $this->generateCsrfToken();
         }
+        
+        // Decrypt all session data on init
+        $this->decryptAllSessionData();
     }
     
     /**
      * Set cookie parameters based on config
+     * Signature must be compatible with parent: setCookieParams($value)
+     * 
+     * @param array|null $value Cookie parameters (optional, for parent compatibility)
      */
-    protected function setCookieParams()
+    public function setCookieParams($value = null)
     {
-        // Auto-detect HTTPS
-        $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-        
-        // Determine secure flag
-        $secure = $this->config['secure'];
-        if (!$secure && $isHttps) {
-            $secure = true;
+        // If custom params provided via parameter, use them directly
+        if ($value !== null && is_array($value)) {
+            parent::setCookieParams($value);
+            return;
         }
         
-        $cookieParams = [
+        // Use config
+        $secure = $this->config['secure'];
+        
+        $params = [
             'httponly' => $this->config['httponly'],
             'lifetime' => $this->config['lifetime'],
             'path' => '/',
@@ -141,9 +159,8 @@ class Session extends \CHttpSession
             'samesite' => $this->config['samesite'],
         ];
         
-        if (method_exists($this, 'setCookieParams')) {
-            $this->setCookieParams($cookieParams);
-        }
+        // Call parent with array
+        parent::setCookieParams($params);
         
         // Set PHP ini settings
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -195,7 +212,7 @@ class Session extends \CHttpSession
     public function generateCsrfToken()
     {
         $token = bin2hex(random_bytes(32));
-        $this->set(self::CSRF_KEY, $token);
+        $this->setRaw(self::CSRF_KEY, $token);
         return $token;
     }
     
@@ -204,7 +221,7 @@ class Session extends \CHttpSession
      */
     public function getCsrfToken()
     {
-        return $this->get(self::CSRF_KEY);
+        return $this->getRaw(self::CSRF_KEY);
     }
     
     /**
@@ -221,26 +238,128 @@ class Session extends \CHttpSession
     }
     
     /**
-     * Set session value
+     * Check if a key should be encrypted
+     */
+    protected function shouldEncrypt($key)
+    {
+        if (!$this->config['encrypt_all']) {
+            return false;
+        }
+        
+        // Skip encryption for exceptions
+        if (in_array($key, $this->config['encrypt_exceptions'])) {
+            return false;
+        }
+        
+        // Skip CSRF token
+        if ($key === self::CSRF_KEY) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Check if a key is encrypted (starts with prefix)
+     */
+    protected function isEncryptedKey($key)
+    {
+        return strpos($key, self::ENCRYPTED_PREFIX) === 0;
+    }
+    
+    /**
+     * Get original key name
+     */
+    protected function getOriginalKey($encryptedKey)
+    {
+        return substr($encryptedKey, strlen(self::ENCRYPTED_PREFIX));
+    }
+    
+    /**
+     * Get encrypted key name
+     */
+    protected function getEncryptedKey($originalKey)
+    {
+        return self::ENCRYPTED_PREFIX . $originalKey;
+    }
+    
+    /**
+     * Set raw value (without encryption)
+     */
+    protected function setRaw($key, $value)
+    {
+        parent::add($key, $value);
+    }
+    
+    /**
+     * Get raw value (without decryption)
+     */
+    protected function getRaw($key, $defaultValue = null)
+    {
+        return parent::get($key, $defaultValue);
+    }
+    
+    /**
+     * Set session value with automatic encryption
      */
     public function set($key, $value)
     {
-        $this->add($key, $value);
+        if ($this->shouldEncrypt($key)) {
+            $encryptedKey = $this->getEncryptedKey($key);
+            $encryptedValue = $this->encrypt($value);
+            $this->setRaw($encryptedKey, $encryptedValue);
+        } else {
+            $this->setRaw($key, $value);
+        }
         return $this;
     }
     
     /**
-     * Get session value
+     * Get session value with automatic decryption
      */
     public function get($key, $defaultValue = null)
     {
-        return parent::get($key, $defaultValue);
+        // Check if key is encrypted
+        if ($this->isEncryptedKey($key)) {
+            $originalKey = $this->getOriginalKey($key);
+            $value = $this->getRaw($key, null);
+            
+            if ($value !== null) {
+                return $this->decrypt($value);
+            }
+            return $defaultValue;
+        }
+        
+        // Check if value should be encrypted
+        if ($this->shouldEncrypt($key)) {
+            $encryptedKey = $this->getEncryptedKey($key);
+            $value = $this->getRaw($encryptedKey, null);
+            
+            if ($value !== null) {
+                return $this->decrypt($value);
+            }
+            return $defaultValue;
+        }
+        
+        // Regular key
+        return $this->getRaw($key, $defaultValue);
     }
     
     /**
      * Check if session key exists
      */
     public function has($key)
+    {
+        if ($this->shouldEncrypt($key)) {
+            return $this->hasRaw($this->getEncryptedKey($key));
+        }
+        return $this->hasRaw($key);
+    }
+    
+    /**
+     * Check raw key exists
+     */
+    protected function hasRaw($key)
     {
         return parent::contains($key);
     }
@@ -250,16 +369,75 @@ class Session extends \CHttpSession
      */
     public function delete($key)
     {
-        parent::remove($key);
+        if ($this->shouldEncrypt($key)) {
+            $this->deleteRaw($this->getEncryptedKey($key));
+        }
+        $this->deleteRaw($key);
         return $this;
     }
     
     /**
-     * Get all session data
+     * Delete raw key
+     */
+    protected function deleteRaw($key)
+    {
+        parent::remove($key);
+    }
+    
+    /**
+     * Decrypt all session data on load
+     */
+    protected function decryptAllSessionData()
+    {
+        if (!$this->config['encrypt_all']) {
+            return;
+        }
+        
+        $keys = array_keys($_SESSION);
+        foreach ($keys as $key) {
+            if ($this->isEncryptedKey($key)) {
+                $originalKey = $this->getOriginalKey($key);
+                $value = $this->getRaw($key, null);
+                
+                if ($value !== null) {
+                    try {
+                        $decrypted = $this->decrypt($value);
+                        // Store decrypted value for easy access
+                        $_SESSION[$originalKey] = $decrypted;
+                        // Keep encrypted version for storage
+                    } catch (\Exception $e) {
+                        // Decryption failed, keep as is
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Get all session data (decrypted)
      */
     public function all()
     {
-        return parent::toArray();
+        $result = [];
+        $keys = array_keys($_SESSION);
+        
+        foreach ($keys as $key) {
+            if ($this->isEncryptedKey($key)) {
+                $originalKey = $this->getOriginalKey($key);
+                $value = $this->getRaw($key, null);
+                if ($value !== null) {
+                    try {
+                        $result[$originalKey] = $this->decrypt($value);
+                    } catch (\Exception $e) {
+                        $result[$originalKey] = $value;
+                    }
+                }
+            } elseif (!in_array($key, $this->config['encrypt_exceptions']) && $key !== self::CSRF_KEY) {
+                $result[$key] = $this->getRaw($key, null);
+            }
+        }
+        
+        return $result;
     }
     
     /**
@@ -303,7 +481,7 @@ class Session extends \CHttpSession
      */
     public function setFlash($key, $value)
     {
-        $flash = $this->get(self::FLASH_KEY, []);
+        $flash = $this->getRaw(self::FLASH_KEY, []);
         $flash[$key] = $value;
         $this->set(self::FLASH_KEY, $flash);
         return $this;
@@ -357,31 +535,19 @@ class Session extends \CHttpSession
     }
     
     /**
-     * Set user data (with optional encryption)
+     * Set user data (always encrypted)
      */
     public function setUser($key, $value)
     {
-        $encrypt = $this->config['encrypt_user_data'];
-        
-        if ($encrypt) {
-            $value = $this->encrypt($value);
-        }
-        
         return $this->set(self::USER_PREFIX . $key, $value);
     }
     
     /**
-     * Get user data (with optional decryption)
+     * Get user data (always decrypted)
      */
     public function getUser($key, $defaultValue = null)
     {
-        $value = $this->get(self::USER_PREFIX . $key, $defaultValue);
-        
-        if ($this->config['encrypt_user_data'] && $value !== null && $value !== $defaultValue) {
-            $value = $this->decrypt($value);
-        }
-        
-        return $value;
+        return $this->get(self::USER_PREFIX . $key, $defaultValue);
     }
     
     /**
@@ -412,13 +578,8 @@ class Session extends \CHttpSession
         $this->set('user_email', is_array($user) ? $user['email'] : $user->email);
         $this->set('user_role', is_array($user) ? ($user['role'] ?? 'user') : ($user->role ?? 'user'));
         
-        // Store full user data (optionally encrypted)
-        if ($this->config['encrypt_user_data']) {
-            $this->set('user_data', $this->encrypt($user));
-        } else {
-            $this->set('user_data', $user);
-        }
-        
+        // Store full user data (encrypted)
+        $this->set('user_data', $user);
         $this->set('logged_in', true);
         
         // Regenerate session ID on login for security
@@ -432,18 +593,12 @@ class Session extends \CHttpSession
      */
     public function getUserAuth()
     {
-        $userData = $this->get('user_data');
-        
-        if ($this->config['encrypt_user_data'] && $userData) {
-            $userData = $this->decrypt($userData);
-        }
-        
         return [
             'id' => $this->get('user_id'),
             'name' => $this->get('user_name'),
             'email' => $this->get('user_email'),
             'role' => $this->get('user_role'),
-            'data' => $userData,
+            'data' => $this->get('user_data'),
             'isLoggedIn' => $this->isLoggedIn()
         ];
     }
@@ -516,9 +671,6 @@ class Session extends \CHttpSession
     
     /**
      * Set encryption key (can be called at runtime)
-     * 
-     * @param string $key Custom encryption key
-     * @return $this
      */
     public function setEncryptionKey($key)
     {
@@ -528,22 +680,12 @@ class Session extends \CHttpSession
     
     /**
      * Get encryption key from multiple sources
-     * 
-     * Priority order:
-     * 1. Custom key set via setEncryptionKey()
-     * 2. APP_KEY constant
-     * 3. Environment variable APP_KEY
-     * 4. Session-based key (auto-generated)
-     * 5. Default fallback key
      */
     protected function getEncryptionKey()
     {
-        // 1. Check custom encryption key set via setEncryptionKey()
         if (!empty($this->config['encryption_key'])) {
             $key = $this->config['encryption_key'];
-        }
-        // 4. Get or create session-based key
-        else {
+        } else {
             $key = $this->getOrCreateSessionKey();
         }
         
@@ -555,34 +697,29 @@ class Session extends \CHttpSession
      */
     protected function getOrCreateSessionKey()
     {
-        $key = $this->get('_encryption_key');
+        $key = $this->getRaw('_encryption_key');
         
         if (!$key) {
             $key = bin2hex(random_bytes(32));
-            $this->set('_encryption_key', $key);
-            
-            // Log warning in production
-            if (!defined('YII_DEBUG') || !YII_DEBUG) {
-                \Yii::log('Using auto-generated session encryption key', 'warning', 'session');
-            }
+            $this->setRaw('_encryption_key', $key);
         }
         
         return $key;
     }
     
     /**
-     * Simple encryption for sensitive data
+     * Encrypt data with AES-256-CBC
      */
     protected function encrypt($data)
     {
         $key = $this->getEncryptionKey();
         $iv = random_bytes(16);
-        $ciphertext = openssl_encrypt(serialize($data), 'AES-256-CBC', $key, 0, $iv);
+        $ciphertext = openssl_encrypt(serialize($data), 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
         return base64_encode($iv . $ciphertext);
     }
     
     /**
-     * Simple decryption for sensitive data
+     * Decrypt data with AES-256-CBC
      */
     protected function decrypt($data)
     {
@@ -590,7 +727,7 @@ class Session extends \CHttpSession
         $data = base64_decode($data);
         $iv = substr($data, 0, 16);
         $ciphertext = substr($data, 16);
-        return unserialize(openssl_decrypt($ciphertext, 'AES-256-CBC', $key, 0, $iv));
+        return unserialize(openssl_decrypt($ciphertext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv));
     }
     
     /**
@@ -680,8 +817,7 @@ class Session extends \CHttpSession
             $this->config[$key] = $value;
             
             if ($key === 'encryption_key') {
-                // Clear cached session key when encryption key changes
-                $this->delete('_encryption_key');
+                $this->deleteRaw('_encryption_key');
             }
             
             $this->setCookieParams();

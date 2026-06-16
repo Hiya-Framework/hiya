@@ -2,12 +2,12 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\Guard
+ * @package Hiya\Component\Guard
  * @since 1.0
  */
 
 
-namespace Hiya\Components;
+namespace Hiya\Component;
 
 use Hiya\Auth\Guards\SessionGuard;
 use Hiya\Auth\Gate;

@@ -22,7 +22,7 @@ namespace Hiya\Security;
  * - Nested tokens
  */
 
-class JWT
+class Jwt
 {
     /**
      * Supported algorithms

@@ -2,13 +2,12 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\Jwt
+ * @package Hiya\Component\Jwt
  * @since 1.0
  */
 
-namespace Hiya\Components;
+namespace Hiya\Component;
 
-use Hiya\Security\JWT;
 
 /**
  * JWT Component for Hiya Framework
@@ -33,7 +32,7 @@ class Jwt extends \CApplicationComponent
     /**
      * @var string Algorithm to use
      */
-    public $algorithm = JWT::ALGO_HS256;
+    public $algorithm = Jwt::ALGO_HS256;
     
     /**
      * @var int Token TTL in seconds (default: 1 hour)
@@ -67,7 +66,7 @@ class Jwt extends \CApplicationComponent
             $this->secret = $this->generateSecret();
         }
         
-        $this->_jwt = new JWT($this->secret);
+        $this->_jwt = new Jwt($this->secret);
     }
     
     /**

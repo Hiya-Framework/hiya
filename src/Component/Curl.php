@@ -2,11 +2,11 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\Curl
+ * @package Hiya\Component\Curl
  * @since 1.0
  */
 
-namespace Hiya\Components;
+namespace Hiya\Component;
 
 // Load Composer autoload if available
 $composerAutoload = HIYA_PATH . '/../vendor/autoload.php';

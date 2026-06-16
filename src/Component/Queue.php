@@ -2,13 +2,11 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\Queue
+ * @package Hiya\Component\Queue
  * @since 1.0
  */
 
-namespace Hiya\Components;
-
-use Hiya\Queue\Queue;
+namespace Hiya\Component;
 
 class Queue extends \CApplicationComponent
 {

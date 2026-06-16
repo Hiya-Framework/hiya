@@ -2,12 +2,11 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Controller
+ * @package Hiya\Base\Controller
  * @since 1.0
  */
-namespace Hiya;
+namespace Hiya\Base;
 
-use CJSON;
 
 class Controller extends \CController
 {
@@ -42,7 +41,6 @@ class Controller extends \CController
     public function init()
     {
         parent::init();
-        // Page title will be set in beforeAction
     }
     
     /**
@@ -122,7 +120,6 @@ class Controller extends \CController
         \Hiya::app()->response->contentType = 'application/json';
         $this->layout = false;
         
-        // Gunakan json_encode bawaan PHP
         $json = json_encode($data);
         
         if ($log && defined('YII_DEBUG') && YII_DEBUG) {

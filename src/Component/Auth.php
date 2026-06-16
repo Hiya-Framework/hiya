@@ -2,11 +2,11 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Components\Auth
+ * @package Hiya\Component\Auth
  * @since 1.0
  */
 
-namespace Hiya\Components;
+namespace Hiya\Component;
 
 use Hiya\Auth\Gate;
 
