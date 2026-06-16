@@ -69,61 +69,59 @@ jobs:
     - name: Test all PHP classes
       run: |
         echo "Testing all PHP classes in src/..."
-        php -r "
-          require_once 'autoload.php';
-          
-          // Function to find all PHP files
-          function findPhpFiles(\$dir) {
-            \$files = [];
-            \$iterator = new RecursiveIteratorIterator(
-              new RecursiveDirectoryIterator(\$dir, RecursiveDirectoryIterator::SKIP_DOTS)
-            );
-            foreach (\$iterator as \$file) {
-              if (\$file->getExtension() === 'php') {
-                \$files[] = \$file->getPathname();
-              }
+        php << 'EOF'
+        require_once 'autoload.php';
+        
+        // Function to find all PHP files
+        function findPhpFiles($dir) {
+          $files = [];
+          $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
+          );
+          foreach ($iterator as $file) {
+            if ($file->getExtension() === 'php') {
+              $files[] = $file->getPathname();
             }
-            return \$files;
           }
+          return $files;
+        }
+        
+        $srcPath = __DIR__ . '/src';
+        $files = findPhpFiles($srcPath);
+        
+        $loaded = 0;
+        $failed = 0;
+        
+        echo 'Found ' . count($files) . " PHP files\n";
+        echo '------------------------' . "\n";
+        
+        foreach ($files as $file) {
+          // Get class name from file path
+          $relativePath = str_replace($srcPath . '/', '', $file);
+          $className = 'Hiya\\' . str_replace(['/', '.php'], ['\\', ''], $relativePath);
           
-          \$srcPath = __DIR__ . '/src';
-          \$files = findPhpFiles(\$srcPath);
-          
-          \$loaded = 0;
-          \$failed = 0;
-          
-          echo 'Found ' . count(\$files) . ' PHP files\n';
-          echo '------------------------\n';
-          
-          foreach (\$files as \$file) {
-            \$className = 'Hiya\\' . str_replace(
-              ['/src/', '/', '.php'], 
-              ['', '\\', ''], 
-              \$file
-            );
-            
-            if (class_exists(\$className)) {
-              echo '✅ ' . \$className . '\n';
-              \$loaded++;
+          if (class_exists($className)) {
+            echo '✅ ' . $className . "\n";
+            $loaded++;
+          } else {
+            // Try with base name only
+            $baseName = basename($file, '.php');
+            if (class_exists($baseName)) {
+              echo '✅ ' . $baseName . "\n";
+              $loaded++;
             } else {
-              // Coba dengan nama class tanpa namespace
-              \$baseName = basename(\$file, '.php');
-              if (class_exists(\$baseName)) {
-                echo '✅ ' . \$baseName . '\n';
-                \$loaded++;
-              } else {
-                echo '❌ ' . \$className . '\n';
-                \$failed++;
-              }
+              echo '❌ ' . $className . "\n";
+              $failed++;
             }
           }
-          
-          echo '------------------------\n';
-          echo '✅ Loaded: ' . \$loaded . '\n';
-          echo '❌ Failed: ' . \$failed . '\n';
-          
-          if (\$failed > 0) exit(1);
-        "
+        }
+        
+        echo '------------------------' . "\n";
+        echo '✅ Loaded: ' . $loaded . "\n";
+        echo '❌ Failed: ' . $failed . "\n";
+        
+        if ($failed > 0) exit(1);
+        EOF
       shell: bash
     
     - name: Check required files
