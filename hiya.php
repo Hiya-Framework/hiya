@@ -74,7 +74,7 @@ class Hiya extends YiiBase
     /**
      * Auto-detect and run appropriate application
      */
-   public static function run($config)
+    public static function run($config)
     {
         if (self::isCli()) {
             $app = self::createConsoleApplication($config);
