@@ -5,8 +5,11 @@
  * @package Hiya\Base\Controller
  * @since 1.0
  */
+
 namespace Hiya\Base;
 
+use Hiya\Http\Response;
+use Hiya\Http\Request;
 
 class Controller extends \CController
 {
@@ -14,35 +17,73 @@ class Controller extends \CController
      * @var string default layout
      */
     public $layout = 'main';
-    
+
     /**
      * @var array breadcrumbs
      */
     public $breadcrumbs = array();
-    
+
     /**
      * @var array menu items
      */
     public $menu = array();
-    
+
     /**
      * @var string page title
      */
     public $pageTitle = '';
-    
+
     /**
      * @var string page title suffix
      */
     public $pageTitleSuffix = ' - Hiya Framework';
-    
+
+    /**
+     * @var Response HTTP Response instance
+     */
+    protected $response;
+
+    /**
+     * @var Request HTTP Request instance
+     */
+    protected $request;
+
+    /**
+     * @var bool Use Response system for render
+     */
+    public $useResponseForRender = false;
+
     /**
      * Initialize controller
      */
     public function init()
     {
         parent::init();
+        $this->response = Response::create();
+        $this->request = new Request();
+        $this->request->init();
     }
-    
+
+    /**
+     * Get response instance
+     *
+     * @return Response
+     */
+    public function getResponse()
+    {
+        return $this->response;
+    }
+
+    /**
+     * Get request instance
+     *
+     * @return Request
+     */
+    public function getRequest()
+    {
+        return $this->request;
+    }
+
     /**
      * Before action - runs before every action
      * @param \CAction $action
@@ -56,21 +97,21 @@ class Controller extends \CController
             $actionId = $action->getId();
             $this->pageTitle = ucfirst($controllerId) . ' ' . ucfirst($actionId) . $this->pageTitleSuffix;
         }
-        
+
         // Check if user is logged in for protected actions
         if ($this->isProtectedAction($action) && \Hiya::app()->user->isGuest) {
             \Hiya::app()->user->loginRequired();
             return false;
         }
-        
+
         // Set CSRF token for forms
-        if (\Hiya::app()->request->isPostRequest) {
+        if ($this->request->isPost()) {
             \Hiya::app()->request->enableCsrfValidation = true;
         }
-        
+
         return parent::beforeAction($action);
     }
-    
+
     /**
      * After action - runs after every action
      * @param \CAction $action
@@ -82,96 +123,312 @@ class Controller extends \CController
         if (defined('YII_DEBUG') && YII_DEBUG) {
             \Hiya::log("Action: " . $this->getId() . '/' . $action->getId(), 'trace', 'controller');
         }
-        
+
         return parent::afterAction($action);
     }
-    
+
+    // ============ RENDER METHODS (UNCHANGED) ============
+
     /**
-     * Check if action requires authentication
-     * @param \CAction $action
-     * @return bool
+     * Renders a view with layout.
+     * KEPT UNCHANGED - Same as Yii base
+     *
+     * @param string $view name of the view to be rendered
+     * @param array $data data to be extracted
+     * @param bool $return whether the rendering result should be returned
+     * @return string|void
      */
-    protected function isProtectedAction($action)
+    public function render($view, $data = null, $return = false)
     {
-        $protectedActions = $this->protectedActions();
-        return in_array($action->getId(), $protectedActions);
+        return parent::render($view, $data, $return);
     }
-    
+
     /**
-     * Define actions that require authentication
-     * Override in child controller
-     * @return array
+     * Renders a view without layout.
+     * KEPT UNCHANGED - Same as Yii base
+     *
+     * @param string $view name of the view to be rendered
+     * @param array $data data to be extracted
+     * @param bool $return whether the rendering result should be returned
+     * @param bool $processOutput whether to process output
+     * @return string|void
      */
-    protected function protectedActions()
+    public function renderPartial($view, $data = null, $return = false, $processOutput = false)
     {
-        return array();
+        return parent::renderPartial($view, $data, $return, $processOutput);
     }
-    
+
     /**
-     * Render JSON response with logging
-     * 
+     * Redirect to URL.
+     * KEPT UNCHANGED - Same as Yii base
+     *
+     * @param string $url URL to redirect to
+     * @param bool $terminate whether to terminate the application
+     * @param int $statusCode HTTP status code
+     */
+    public function redirect($url, $terminate = true, $statusCode = 302)
+    {
+        parent::redirect($url, $terminate, $statusCode);
+    }
+
+    // ============ RESPONSE METHODS ============
+
+    /**
+     * Render JSON response
+     *
      * @param mixed $data Data to encode as JSON
      * @param int $statusCode HTTP status code
-     * @param bool $log Log the response (default: false)
+     * @param bool $log Log the response
+     * @return Response
+     */
+    public function jsonResponse($data, $statusCode = 200, $log = false)
+    {
+        $this->layout = false;
+
+        if ($log && defined('YII_DEBUG') && YII_DEBUG) {
+            \Hiya::log("JSON Response: " . substr(json_encode($data), 0, 500), 'info', 'controller');
+        }
+
+        return $this->response
+            ->withStatus($statusCode)
+            ->json($data);
+    }
+
+    /**
+     * Render error as JSON
+     *
+     * @param string $message
+     * @param int $statusCode
+     * @param int $errorCode
+     * @return Response
+     */
+    public function jsonError($message, $statusCode = 400, $errorCode = null)
+    {
+        $this->layout = false;
+        $data = ['error' => $message, 'code' => $statusCode];
+
+        if ($errorCode !== null) {
+            $data['error_code'] = $errorCode;
+        }
+
+        return $this->response
+            ->withStatus($statusCode)
+            ->json($data);
+    }
+
+    /**
+     * Render success as JSON
+     *
+     * @param mixed $data
+     * @param string $message
+     * @param int $statusCode
+     * @return Response
+     */
+    public function jsonSuccess($data = null, $message = 'Success', $statusCode = 200)
+    {
+        $this->layout = false;
+        $response = ['success' => true, 'message' => $message];
+
+        if ($data !== null) {
+            $response['data'] = $data;
+        }
+
+        return $this->response
+            ->withStatus($statusCode)
+            ->json($response);
+    }
+
+    /**
+     * Render service response (for external service results)
+     *
+     * @param mixed $result Service result
+     * @param string|null $serviceName Service name
+     * @param int $statusCode
+     * @return Response
+     */
+    public function serviceResponse($result, $serviceName = null, $statusCode = 200)
+    {
+        $this->layout = false;
+        return $this->response
+            ->withStatus($statusCode)
+            ->service($result, $serviceName);
+    }
+
+    /**
+     * Render service error response
+     *
+     * @param string $message Error message
+     * @param int $statusCode
+     * @param string|null $serviceName
+     * @return Response
+     */
+    public function serviceErrorResponse($message, $statusCode = 500, $serviceName = null)
+    {
+        $this->layout = false;
+        return $this->response
+            ->withStatus($statusCode)
+            ->serviceError($message, $statusCode, $serviceName);
+    }
+
+    /**
+     * Render HTML view with layout and return as Response
+     *
+     * @param string $view View name
+     * @param array $data View data
+     * @param int $statusCode HTTP status code
+     * @return Response
+     */
+    public function view($view, $data = [], $statusCode = 200)
+    {
+        $content = parent::render($view, $data, true);
+        return $this->response
+            ->withStatus($statusCode)
+            ->html($content);
+    }
+
+    /**
+     * Render HTML view without layout and return as Response
+     *
+     * @param string $view View name
+     * @param array $data View data
+     * @param int $statusCode HTTP status code
+     * @return Response
+     */
+    public function viewPartial($view, $data = [], $statusCode = 200)
+    {
+        $this->layout = false;
+        $content = parent::renderPartial($view, $data, true);
+        return $this->response
+            ->withStatus($statusCode)
+            ->html($content);
+    }
+
+    /**
+     * Redirect with Response
+     *
+     * @param string $url
+     * @param int $statusCode
+     * @return Response
+     */
+    public function redirectResponse($url, $statusCode = 302)
+    {
+        return $this->response->redirect($url, $statusCode);
+    }
+
+    /**
+     * Download file with Response
+     *
+     * @param string $filePath
+     * @param string|null $fileName
+     * @param string|null $mimeType
+     * @return Response
+     */
+    public function downloadResponse($filePath, $fileName = null, $mimeType = null)
+    {
+        return $this->response->download($filePath, $fileName, $mimeType);
+    }
+
+    /**
+     * Send file inline with Response
+     *
+     * @param string $filePath
+     * @param string|null $fileName
+     * @param string|null $mimeType
+     * @return Response
+     */
+    public function fileResponse($filePath, $fileName = null, $mimeType = null)
+    {
+        return $this->response->file($filePath, $fileName, $mimeType);
+    }
+
+    /**
+     * Stream response
+     *
+     * @param callable $callback
+     * @param string $contentType
+     * @return Response
+     */
+    public function streamResponse($callback, $contentType = 'text/plain')
+    {
+        $this->layout = false;
+        $this->response->withHeader('Content-Type', $contentType);
+        $this->response->withBody($callback);
+        return $this->response;
+    }
+
+    /**
+     * Stream JSON Lines (NDJSON)
+     *
+     * @param callable $generator Generator function
+     * @return Response
+     */
+    public function streamJsonLines($generator)
+    {
+        $this->layout = false;
+
+        $callback = function() use ($generator) {
+            foreach ($generator as $item) {
+                echo json_encode($item) . "\n";
+                ob_flush();
+                flush();
+            }
+        };
+
+        $this->response->withHeader('Content-Type', 'application/x-ndjson');
+        $this->response->withHeader('Transfer-Encoding', 'chunked');
+        $this->response->withBody($callback);
+
+        return $this->response;
+    }
+
+    // ============ LEGACY COMPATIBILITY ============
+
+    /**
+     * @deprecated Use jsonResponse() instead
      */
     public function renderJson($data, $statusCode = 200, $log = false)
     {
-        \Hiya::app()->response->statusCode = $statusCode;
-        \Hiya::app()->response->contentType = 'application/json';
-        $this->layout = false;
-        
-        $json = json_encode($data);
-        
-        if ($log && defined('YII_DEBUG') && YII_DEBUG) {
-            \Hiya::log("JSON Response: " . substr($json, 0, 500), 'info', 'controller');
-        }
-        
-        echo $json;
+        $response = $this->jsonResponse($data, $statusCode, $log);
+        $response->send();
         \Hiya::app()->end();
     }
-    
+
     /**
-     * Render error as JSON
-     * @param string $message
-     * @param int $statusCode
+     * @deprecated Use jsonError() instead
      */
     public function renderErrorJson($message, $statusCode = 400)
     {
-        $this->renderJson([
-            'error' => true,
-            'message' => $message,
-            'code' => $statusCode,
-        ], $statusCode);
+        $response = $this->jsonError($message, $statusCode);
+        $response->send();
+        \Hiya::app()->end();
     }
-    
+
     /**
-     * Render success as JSON
-     * @param mixed $data
-     * @param string $message
+     * @deprecated Use jsonSuccess() instead
      */
     public function renderSuccessJson($data = null, $message = 'Success')
     {
-        $this->renderJson([
-            'success' => true,
-            'message' => $message,
-            'data' => $data,
-        ]);
+        $response = $this->jsonSuccess($data, $message);
+        $response->send();
+        \Hiya::app()->end();
     }
-    
+
+    // ============ CONTROLLER HELPERS ============
+
     /**
      * Redirect back to previous page
      * @param string $defaultUrl
      */
     public function redirectBack($defaultUrl = array('site/index'))
     {
-        $backUrl = \Hiya::app()->request->urlReferrer;
+        $backUrl = $this->request->getUrlReferrer();
         if ($backUrl) {
             $this->redirect($backUrl);
         } else {
             $this->redirect($defaultUrl);
         }
     }
-    
+
     /**
      * Set flash message
      * @param string $type (success, error, warning, info)
@@ -181,7 +438,7 @@ class Controller extends \CController
     {
         \Hiya::app()->user->setFlash($type, $message);
     }
-    
+
     /**
      * Get flash message
      * @param string $type
@@ -191,7 +448,7 @@ class Controller extends \CController
     {
         return \Hiya::app()->user->getFlash($type);
     }
-    
+
     /**
      * Check if user has permission
      * @param string $permission
@@ -202,17 +459,38 @@ class Controller extends \CController
         if (\Hiya::app()->user->isGuest) {
             return false;
         }
-        
+
         // Use Gate component if available
         if (\Hiya::app()->hasComponent('auth')) {
             return \Hiya::app()->auth->can($permission);
         }
-        
+
         // Fallback to simple role check
         $userRole = \Hiya::app()->user->getState('role', 'guest');
         return in_array($userRole, ['admin', 'superadmin']);
     }
-    
+
+    /**
+     * Check if action requires authentication
+     * @param \CAction $action
+     * @return bool
+     */
+    protected function isProtectedAction($action)
+    {
+        $protectedActions = $this->protectedActions();
+        return in_array($action->getId(), $protectedActions);
+    }
+
+    /**
+     * Define actions that require authentication
+     * Override in child controller
+     * @return array
+     */
+    protected function protectedActions()
+    {
+        return array();
+    }
+
     /**
      * Get current user ID
      * @return int|null
@@ -221,7 +499,7 @@ class Controller extends \CController
     {
         return \Hiya::app()->user->isGuest ? null : \Hiya::app()->user->id;
     }
-    
+
     /**
      * Get current user data
      * @return mixed
@@ -230,7 +508,7 @@ class Controller extends \CController
     {
         return \Hiya::app()->user->isGuest ? null : \Hiya::app()->user->getUserData();
     }
-    
+
     /**
      * Add breadcrumb
      * @param string $label
@@ -240,7 +518,7 @@ class Controller extends \CController
     {
         $this->breadcrumbs[] = array($label, $url);
     }
-    
+
     /**
      * Set page title
      * @param string $title
@@ -249,7 +527,7 @@ class Controller extends \CController
     {
         $this->pageTitle = $title . $this->pageTitleSuffix;
     }
-    
+
     /**
      * Get pagination helper
      * @param int $totalItems
@@ -262,16 +540,16 @@ class Controller extends \CController
         $pagination->pageSize = $pageSize;
         return $pagination;
     }
-    
+
     /**
      * Check if request is AJAX
      * @return bool
      */
     protected function isAjax()
     {
-        return \Hiya::app()->request->isAjaxRequest;
+        return $this->request->isAjax();
     }
-    
+
     /**
      * Get request parameter with default
      * @param string $name
@@ -280,6 +558,66 @@ class Controller extends \CController
      */
     protected function getParam($name, $default = null)
     {
-        return \Hiya::app()->request->getParam($name, $default);
+        return $this->request->input($name, $default);
+    }
+
+    // ============ REQUEST SHORTCUTS ============
+
+    /**
+     * Get input parameter
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function input($name, $default = null)
+    {
+        return $this->request->input($name, $default);
+    }
+
+    /**
+     * Get POST parameter
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function post($name, $default = null)
+    {
+        return $this->request->post($name, $default);
+    }
+
+    /**
+     * Get GET parameter
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function query($name, $default = null)
+    {
+        return $this->request->query($name, $default);
+    }
+
+    /**
+     * Get JSON payload from request
+     *
+     * @param string|null $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getJson($key = null, $default = null)
+    {
+        return $this->request->json($key, $default);
+    }
+
+    /**
+     * Check if request has JSON
+     *
+     * @return bool
+     */
+    public function hasJson()
+    {
+        return $this->request->hasJson();
     }
 }

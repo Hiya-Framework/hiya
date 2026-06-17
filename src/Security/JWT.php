@@ -2,7 +2,7 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Security\JWT
+ * @package Hiya\Security\Jwt
  * @since 1.0
  */
 
