@@ -381,7 +381,18 @@ class Controller extends \CController
         return $this->response;
     }
 
-    // ============ LEGACY COMPATIBILITY ============
+    /**
+     * Create URL
+     *
+     * @param string $route
+     * @param array $params
+     * @param string $ampersand
+     * @return string
+     */
+    public function url($route, $params = array(), $ampersand = '&')
+    {
+        return \Hiya::app()->createUrl($route, $params, $ampersand);
+    }
 
     /**
      * @deprecated Use jsonResponse() instead

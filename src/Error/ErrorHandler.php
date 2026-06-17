@@ -156,7 +156,6 @@ class ErrorHandler extends CErrorHandler
      */
     protected function findViewFile($viewName, $errorCode)
     {
-        // 1. Check custom template for specific error code
         if (isset($this->errorTemplates[$errorCode])) {
             $customFile = $this->errorTemplates[$errorCode];
             if (file_exists($customFile)) {
@@ -164,7 +163,6 @@ class ErrorHandler extends CErrorHandler
             }
         }
         
-        // 2. Check custom error view path
         if ($this->errorViewPath) {
             $customFile = $this->errorViewPath . '/' . $viewName . '.php';
             if (file_exists($customFile)) {
@@ -177,7 +175,16 @@ class ErrorHandler extends CErrorHandler
             }
         }
         
-        // 3. Check application views
+        $hiyaView = dirname(__FILE__) . '/views/' . $viewName . '.php';
+        if (file_exists($hiyaView)) {
+            return $hiyaView;
+        }
+        
+        $hiyaCodeView = dirname(__FILE__) . '/views/' . $errorCode . '.php';
+        if (file_exists($hiyaCodeView)) {
+            return $hiyaCodeView;
+        }
+
         $appBase = Yii::getPathOfAlias('application.views');
         if ($appBase) {
             $appView = $appBase . '/error/' . $viewName . '.php';
@@ -191,15 +198,9 @@ class ErrorHandler extends CErrorHandler
             }
         }
         
-        // 4. Check Hiya core views
-        $HiyaView = dirname(__FILE__) . '/views/' . $viewName . '.php';
-        if (file_exists($HiyaView)) {
-            return $HiyaView;
-        }
-        
-        $HiyaCodeView = dirname(__FILE__) . '/views/' . $errorCode . '.php';
-        if (file_exists($HiyaCodeView)) {
-            return $HiyaCodeView;
+        $yiiDefaultView = Yii::getPathOfAlias('system.views') . '/' . $viewName . '.php';
+        if (file_exists($yiiDefaultView)) {
+            return $yiiDefaultView;
         }
         
         return false;
