@@ -24,6 +24,10 @@ class ApiController extends Controller
     // this is api base controller
     public $isApi = true;
 
+    // allowed ips
+    protected $allowedIps = []; // '127.0.0.1', '::1'
+
+
     // this is default header
     protected $defaultHeaders = [
         'X-Content-Type-Options' => 'nosniff',
@@ -57,8 +61,10 @@ class ApiController extends Controller
     #[Override]
     protected function beforeAction($action)
     {
-        $actionId = $action->id;
+        // check ips allowed
+        $this->checkIpAddress();
 
+        $actionId = $action->id;
         if (isset($this->allowedMethods[$actionId])) {
             $allowed = (array) $this->allowedMethods[$actionId];
             $current = $this->request->getRequestType(); 
@@ -77,6 +83,15 @@ class ApiController extends Controller
         }
 
         return parent::beforeAction($action);
+    }
+
+    protected function checkIpAddress()
+    {
+        $clientIp = \Hiya::app()->request->getUserHostAddress();
+
+        if (!in_array($clientIp, $this->allowedIps)) {
+            throw new \CHttpException(403, 'Access Denied');
+        }
     }
 
     protected function applyHeaders()
