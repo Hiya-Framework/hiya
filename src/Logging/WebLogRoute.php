@@ -2,10 +2,9 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Error
+ * @package Hiya\Logging
  * @since 1.0
  */
-
 
 namespace Hiya\Logging;
 
@@ -133,11 +132,30 @@ class WebLogRoute extends CWebLogRoute
     }
     
     /**
+     * Check if current request is API
+     * @return bool
+     */
+    protected function isApiRequest()
+    {
+        $controller = \Yii::app()->getController();
+        
+        if ($controller instanceof \Hiya\Base\Controller) {
+            return $controller->isApi;
+        }
+        
+        return false;
+    }
+    
+    /**
      * Displays the log messages with enhanced formatting.
      * @param array $logs list of log messages
      */
     public function processLogs($logs)
     {
+        if ($this->isApiRequest()) {
+            return;
+        }
+        
         // Only display in non-AJAX, non-Flash requests
         $app = Yii::app();
         $isAjax = $app->getRequest()->getIsAjaxRequest();
@@ -230,7 +248,6 @@ class WebLogRoute extends CWebLogRoute
         switch (true) {
             case strpos($os, 'WIN') !== false:
                 $osName = 'Windows';
-                // Get Windows version if possible
                 if (function_exists('php_uname')) {
                     $version = php_uname('r');
                     $osName .= ' ' . $version;
@@ -238,7 +255,6 @@ class WebLogRoute extends CWebLogRoute
                 break;
             case strpos($os, 'Linux') !== false:
                 $osName = 'Linux';
-                // Try to get distribution info
                 if (file_exists('/etc/os-release')) {
                     $release = @parse_ini_file('/etc/os-release');
                     if ($release && isset($release['PRETTY_NAME'])) {
@@ -269,7 +285,6 @@ class WebLogRoute extends CWebLogRoute
                 $osName = $os;
         }
         
-        // Add architecture
         $arch = php_uname('m');
         if ($arch) {
             $osName .= ' (' . $arch . ')';
@@ -286,7 +301,6 @@ class WebLogRoute extends CWebLogRoute
     {
         $server = $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown';
         
-        // Simplify common server names
         if (strpos($server, 'Apache') !== false) {
             preg_match('/Apache\/(\d+\.\d+)/', $server, $matches);
             $version = isset($matches[1]) ? ' ' . $matches[1] : '';
@@ -311,8 +325,6 @@ class WebLogRoute extends CWebLogRoute
     protected function getApplicationInfo()
     {
         $request = Yii::app()->getRequest();
-        
-        // Get Hiya version if available
         $hiyaVersion = defined('HIYA_VERSION') ? HIYA_VERSION : '1.0.0';
         
         return [
@@ -338,18 +350,15 @@ class WebLogRoute extends CWebLogRoute
      */
     protected function formatMessage($message)
     {
-        // Try to decode JSON
         $json = json_decode($message, true);
         if ($json !== null && json_last_error() === JSON_ERROR_NONE) {
             return '<pre class="hiya-log-json">' . htmlspecialchars(json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '</pre>';
         }
         
-        // Check if it's SQL query
         if (preg_match('/^(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|REPLACE)/i', trim($message))) {
             return '<pre class="hiya-log-sql">' . htmlspecialchars($message) . '</pre>';
         }
         
-        // Check if it's stack trace
         if (strpos($message, '#0 ') !== false || preg_match('/\s+at\s+[\w\\\\]+::/', $message)) {
             return '<pre class="hiya-log-trace">' . htmlspecialchars($message) . '</pre>';
         }
@@ -435,13 +444,9 @@ class WebLogRoute extends CWebLogRoute
      */
     protected function renderView($data)
     {
-        // Try to find view file in multiple locations
         $viewPaths = [
-            // Application views
             Yii::getPathOfAlias('application.views.log') . '/hiya-log.php',
-            // Hiya core views
             dirname(__FILE__) . '/views/hiya-log.php',
-            // Fallback inline view
             null
         ];
         
@@ -457,7 +462,6 @@ class WebLogRoute extends CWebLogRoute
             extract($data);
             include($viewFile);
         } else {
-            // Fallback to inline view
             $this->renderInlineView($data);
         }
     }

@@ -4,6 +4,8 @@
  * @link https://www.taktikspace.com/hiya
  * @package Hiya\Base\Controller
  * @since 1.0
+ * 
+ * Web Controller
  */
 
 namespace Hiya\Base;
@@ -54,6 +56,11 @@ class Controller extends \CController
     public $useResponseForRender = false;
 
     /**
+     * @var bool Is this Api Controller
+     */
+    public $isApi = false;
+
+    /**
      * Initialize controller
      */
     public function init()
@@ -64,6 +71,11 @@ class Controller extends \CController
         $this->request->init();
     }
 
+    protected function isApiRequest()
+    {
+        return $this->isApi;
+    }
+    
     /**
      * Get response instance
      *
@@ -171,8 +183,6 @@ class Controller extends \CController
         parent::redirect($url, $terminate, $statusCode);
     }
 
-    // ============ RESPONSE METHODS ============
-
     /**
      * Render JSON response
      *
@@ -189,9 +199,14 @@ class Controller extends \CController
             \Hiya::log("JSON Response: " . substr(json_encode($data), 0, 500), 'info', 'controller');
         }
 
-        return $this->response
+        $response = $this->response
             ->withStatus($statusCode)
             ->json($data);
+        
+        $response->send();
+        \Hiya::app()->end();
+        
+        return $response;
     }
 
     /**

@@ -97,6 +97,120 @@ class ErrorHandler extends CErrorHandler
     }
     
     /**
+     * Render error - Handles both Web and API error responses
+     * 
+     * For API requests: Returns JSON error response with proper HTTP status code
+     * For Web requests: Renders HTML error view
+     */
+    protected function renderError()
+    {
+        $controller = Yii::app()->getController();
+        
+        // Handle API requests
+        if ($controller instanceof \Hiya\Base\ApiController) {
+            $this->renderApiError();
+            return;
+        }
+        
+        // Handle Web requests
+        $this->renderWebError();
+    }
+
+    /**
+     * Render API error response
+     * Returns proper JSON error with HTTP status code (Laravel-style)
+     */
+    protected function renderApiError()
+    {
+        $error = Yii::app()->getErrorHandler()->getError();
+        
+        // Get status code
+        $statusCode = isset($error['code']) ? $error['code'] : 500;
+        $message = isset($error['message']) ? $error['message'] : 'An error occurred';
+        
+        // Build response based on status code (Laravel-style)
+        $response = [];
+        
+        // For 404 errors - Laravel returns simple message
+        if ($statusCode == 404) {
+            $response = [
+                'message' => $message,
+            ];
+            
+            // Add exception details in debug mode
+            if (YII_DEBUG && $this->detailedErrors) {
+                $response['exception'] = isset($error['type']) ? $error['type'] : 'Error';
+                $response['file'] = isset($error['file']) ? $error['file'] : 'Unknown';
+                $response['line'] = isset($error['line']) ? $error['line'] : '?';
+                $response['trace'] = $this->getStackTrace();
+            }
+        }
+        // For validation errors (422) - Laravel returns errors key
+        else if ($statusCode == 422 && isset($error['errors'])) {
+            $response = [
+                'message' => $message ?: 'The given data was invalid.',
+                'errors' => $error['errors'],
+            ];
+        }
+        // For authentication errors (401) - Laravel returns simple message
+        else if ($statusCode == 401) {
+            $response = [
+                'message' => $message ?: 'Unauthenticated.',
+            ];
+        }
+        // For forbidden errors (403)
+        else if ($statusCode == 403) {
+            $response = [
+                'message' => $message ?: 'Forbidden.',
+            ];
+        }
+        // For other errors - Laravel-style with success flag
+        else {
+            $response = [
+                'success' => false,
+                'message' => $message,
+            ];
+            
+            // Add error details for non-404 errors
+            if (!empty($error)) {
+                $response['error'] = [
+                    'code' => $statusCode,
+                    'type' => isset($error['type']) ? $error['type'] : 'Error',
+                ];
+            }
+        }
+        
+        if (YII_DEBUG && $this->detailedErrors && $statusCode != 404) {
+            // For 404, we already added debug info above
+            if (!isset($response['file'])) {
+                $response['debug'] = [
+                    'file' => isset($error['file']) ? $error['file'] : 'Unknown',
+                    'line' => isset($error['line']) ? $error['line'] : '?',
+                    'trace' => $this->getStackTrace(),
+                    'request' => $this->getRequestInfo(),
+                ];
+            }
+        }
+        
+        // Set status code and return JSON
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        Yii::app()->end();
+    }
+
+
+    /**
+     * Render Web error response
+     * Shows HTML error page with appropriate view
+     */
+    protected function renderWebError()
+    {
+        // Parent handling for web requests
+        parent::renderError();
+    }
+
+    /**
      * Render error view - OVERRIDE to use custom views
      * @param string $view
      * @param array $data

@@ -50,7 +50,22 @@ class Response extends AbstractResponse
         $this->info = $info;
     }
 
-    // ============ STATUS CHECKS ============
+    /**
+     * Send response to browser
+     */
+    public function send()
+    {
+        // Send headers
+        $this->sendHeaders();
+        
+        // Send body
+        $this->sendBody();
+        
+        // Terminate if needed
+        if ($this->terminate && class_exists('Yii')) {
+            \Yii::app()->end();
+        }
+    }
 
     /**
      * Check if response is successful (2xx)
@@ -157,7 +172,6 @@ class Response extends AbstractResponse
         return $this->info;
     }
 
-    // ============ FLUENT METHODS ============
 
     /**
      * Send as JSON

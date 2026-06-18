@@ -2,13 +2,15 @@
 /*
  * Copyright (c) Yusuf Hermanto <github.com/hermans>
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Base\Component
+ * @package Hiya\Base\Controller
  * @since 1.0
  */
 
-namespace Hiya\Base;
+namespace Hiya\Web;
 
-class Component extends \CApplicationComponent
+use CWebModule;
+
+class Module extends CWebModule
 {
     public function init()
     {

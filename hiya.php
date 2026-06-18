@@ -117,20 +117,27 @@ class Hiya extends YiiBase
         }
     }
     
-    /**
-     * Override error handler
-     */
     protected static function overrideErrorHandler($app)
     {
-        try {
-            $errorHandler = new Hiya\Error\ErrorHandler();
-            $errorHandler->theme = 'auto';
-            $errorHandler->detailedErrors = true;
-            $errorHandler->logErrors = true;
-            $app->setComponent('errorHandler', $errorHandler);
-        } catch (Exception $e) {
-            error_log('Failed to override error handler: ' . $e->getMessage());
+        // 1. Get the current configuration array from the application
+        $config = $app->getComponent('errorHandler');
+        
+        // 2. If it's not configured, provide a default array
+        if (!is_array($config)) {
+            $config = [
+                'class' => '\Hiya\Error\ErrorHandler',
+                'errorAction' => 'site/error',
+            ];
         }
+
+        // 3. Ensure the class property is set (in case they forgot it in main.config)
+        if (!isset($config['class'])) {
+            $config['class'] = '\Hiya\Error\ErrorHandler';
+        }
+
+        // 4. Pass the ARRAY to Yii. Do NOT use "new $className()"
+        // Yii will now use this array to instantiate the class when the error occurs.
+        $app->setComponent('errorHandler', $config);
     }
     
     /**
