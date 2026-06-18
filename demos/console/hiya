@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Hiya Console Entry Point
+ */
+
+// Change to the directory where this script is located
+chdir(__DIR__);
+
+// Load the console application
+require_once __DIR__ . '/protected/hiyac.php';
