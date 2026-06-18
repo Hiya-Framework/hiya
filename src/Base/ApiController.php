@@ -41,7 +41,8 @@ class ApiController extends Controller
         parent::init();
         $this->layout = false;
 
-        $this->request = new Request();
+        $this->request = \Hiya::app()->request;
+        $this->request->enableCsrfValidation = false;
         $this->request->init();
 
         $this->response = new Response();

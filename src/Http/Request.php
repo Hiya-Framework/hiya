@@ -4,6 +4,7 @@
  * @link https://www.taktikspace.com/hiya
  * @package Hiya\Http
  * @since 1.0
+ * 
  */
 
 namespace Hiya\Http;
@@ -11,36 +12,8 @@ namespace Hiya\Http;
 /**
  * HTTP Request - Extends Yii CHttpRequest with modern features
  *
- * Features from Yii CHttpRequest:
- * - getParam(), getPost(), getQuery()
- * - getCookies(), getCookie()
- * - getUserHostAddress(), getUserAgent()
- * - getUrl(), getHostInfo(), getPathInfo()
- * - CSRF validation
- * - Cookie validation
- *
- * Additional Hiya features:
- * - JSON payload parsing
- * - REST parameters (PUT, PATCH, DELETE)
- * - Type casting for parameters
- * - Input sanitization
- * - Custom filtering
- * - Full URL helpers
- * - Modern method names (aliases)
- *
- * Example:
- * ```php
- * $request = new Request();
- *
- * // Modern style (recommended)
- * $username = $request->input('username');
- * if ($request->isPost()) { ... }
- * if ($request->isAjax()) { ... }
- *
- * // Yii style (still works)
- * $username = $request->getParam('username');
- * if ($request->getIsPostRequest()) { ... }
- * ```
+ * reference: 
+ * https://github.com/yiisoft/yii2/blob/master/framework/web/Request.php
  */
 class Request extends \CHttpRequest
 {
@@ -58,17 +31,108 @@ class Request extends \CHttpRequest
      * @var string Raw request body
      */
     protected $_rawBody;
+    
+    /**
+     * @var array|null Cached request headers.
+    */
+    protected $_headers;
 
     /**
      * Initialize
      */
     public function init()
     {
+        if ($this->isApiRequest()) {
+            $this->enableCsrfValidation = false;
+        }
+
         parent::init();
         $this->parseRestParams();
     }
 
-    // ============ MODERN METHOD NAMES ============
+    protected function isApiRequest()
+    {
+       $contentType = $this->header('Content-Type');
+    
+        if ($contentType && strpos($contentType, 'application/json') !== false) {
+            return true;
+        }
+
+        if ($contentType && strpos($contentType, 'multipart/form-data') !== false) {
+            return true;
+        }
+
+        return false;
+    }
+    
+    /**
+     * Returns all HTTP headers.
+     * This implementation combines native functions and $_SERVER fallback
+     * to ensure headers like 'Authorization' are captured correctly.
+     * @return array
+     */
+    public function getHeaders()
+    {
+        if ($this->_headers !== null) {
+            return $this->_headers;
+        }
+
+        $this->_headers = [];
+
+        if (function_exists('getallheaders')) {
+            $this->_headers = getallheaders();
+        } 
+        
+        // or if specific headers like 'Authorization' were skipped.
+        if (empty($this->_headers)) {
+            $headerPrefixes = ['HTTP_' => 5, 'REDIRECT_HTTP_' => 14];
+
+            foreach ($_SERVER as $name => $value) {
+                foreach ($headerPrefixes as $prefix => $length) {
+                    if (strncmp($name, $prefix, $length) === 0) {
+                        $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, $length)))));
+                        $this->_headers[$header] = $value;
+                        continue 2;
+                    }
+                }
+            }
+
+            // Always include Content-Type and Content-Length manually
+            if (isset($_SERVER['CONTENT_TYPE']))   $this->_headers['Content-Type'] = $_SERVER['CONTENT_TYPE'];
+            if (isset($_SERVER['CONTENT_LENGTH'])) $this->_headers['Content-Length'] = $_SERVER['CONTENT_LENGTH'];
+            
+            // SPECIAL HANDLING: Attempt to retrieve Authorization if missing
+            // This specifically targets the "Authorization" header issue in Apache
+            if (!isset($this->_headers['Authorization']) && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+                $this->_headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+            }
+        }
+
+        return $this->_headers;
+    }
+
+    /**
+     * Get specific header (Case-insensitive)
+     */
+    public function header($name, $default = null)
+    {
+        $headers = $this->getHeaders();
+        // 1. Ubah input name ke format standar (kebab-case)
+        $normalizedName = ucwords(strtolower($name), '-');
+        
+        // 2. Cek apakah ada di array (kasus normal)
+        if (isset($headers[$normalizedName])) {
+            return $headers[$normalizedName];
+        }
+        
+        foreach ($headers as $key => $value) {
+            if (strcasecmp($key, $name) === 0) {
+                return $value;
+            }
+        }
+        
+        return $default;
+    }
 
     /**
      * Get input parameter (GET or POST)
@@ -162,8 +226,6 @@ class Request extends \CHttpRequest
     {
         return $_POST;
     }
-
-    // ============ METHOD CHECKS (MODERN) ============
 
     /**
      * Check if request is GET
@@ -325,8 +387,6 @@ class Request extends \CHttpRequest
         return isset($_GET[$name]);
     }
 
-    // ============ JSON PAYLOAD ============
-
     /**
      * Get JSON payload
      *
@@ -369,8 +429,6 @@ class Request extends \CHttpRequest
     {
         return $this->getJson() !== null;
     }
-
-    // ============ REST PARAMETERS ============
 
     /**
      * Get REST parameter (PUT, PATCH, DELETE)
@@ -435,8 +493,6 @@ class Request extends \CHttpRequest
         $this->_restParams = $data;
     }
 
-    // ============ RAW BODY ============
-
     /**
      * Get raw request body
      * Override parent to cache
@@ -451,7 +507,6 @@ class Request extends \CHttpRequest
         return $this->_rawBody;
     }
 
-    // ============ CONTENT TYPE ============
 
     /**
      * Get content type
@@ -462,8 +517,6 @@ class Request extends \CHttpRequest
     {
         return parent::getContentType();
     }
-
-    // ============ TYPE CASTING ============
 
     /**
      * Get parameter with type casting
@@ -534,8 +587,6 @@ class Request extends \CHttpRequest
         }
     }
 
-    // ============ SANITIZATION ============
-
     /**
      * Sanitize value (strip tags, trim)
      *
@@ -583,8 +634,6 @@ class Request extends \CHttpRequest
         return $this->sanitize($this->getQuery($name, $default));
     }
 
-    // ============ CUSTOM FILTERING ============
-
     /**
      * Filter input with custom callback
      *
@@ -627,7 +676,6 @@ class Request extends \CHttpRequest
         return $filter($value);
     }
 
-    // ============ URL HELPERS ============
 
     /**
      * Get full URL
@@ -665,7 +713,6 @@ class Request extends \CHttpRequest
         return $this->getUserHostAddress();
     }
 
-    // ============ COOKIES ============
 
     /**
      * Get cookie
@@ -690,42 +737,4 @@ class Request extends \CHttpRequest
         return $this->getCookies()->toArray();
     }
 
-    // ============ HEADERS ============
-
-    /**
-     * Get all headers
-     *
-     * @return array
-     */
-    public function allHeaders()
-    {
-        $headers = [];
-        foreach ($_SERVER as $key => $value) {
-            if (strpos($key, 'HTTP_') === 0) {
-                $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))));
-                $headers[$header] = $value;
-            }
-        }
-        if (isset($_SERVER['CONTENT_TYPE'])) {
-            $headers['Content-Type'] = $_SERVER['CONTENT_TYPE'];
-        }
-        if (isset($_SERVER['CONTENT_LENGTH'])) {
-            $headers['Content-Length'] = $_SERVER['CONTENT_LENGTH'];
-        }
-        return $headers;
-    }
-
-    /**
-     * Get specific header
-     *
-     * @param string $name
-     * @param string $default
-     * @return string|null
-     */
-    public function header($name, $default = null)
-    {
-        $headers = $this->allHeaders();
-        $name = ucwords(strtolower($name), '-');
-        return isset($headers[$name]) ? $headers[$name] : $default;
-    }
 }
