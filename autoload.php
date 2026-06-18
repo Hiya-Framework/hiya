@@ -27,8 +27,9 @@ spl_autoload_register(function ($className) {
         $classFile = str_replace('\\', '/', $relativeClass);
 
         $paths = [
-            HIYA_PATH . '/src/Base/' . $classFile . '.php',           // Base classes
             HIYA_PATH . '/src/' . $classFile . '.php',                // Root src
+            HIYA_PATH . '/src/Base/' . $classFile . '.php',           // Base classes
+            HIYA_PATH . '/src/Base/Traits/' . $classFile . '.php',           // Base Traits           
             HIYA_PATH . '/src/Components/' . basename($classFile) . '.php', // Components
             HIYA_PATH . '/src/Auth/' . $classFile . '.php',           // Auth
             HIYA_PATH . '/src/Web/' . $classFile . '.php',           // Web

@@ -10,6 +10,12 @@ namespace Hiya\Base;
 
 class Component extends \CApplicationComponent
 {
+    public function __construct()
+    {
+        // this auto load when component intialize
+        $this->init();
+    }
+
     public function init()
     {
         parent::init();

@@ -53,15 +53,6 @@ class Session extends \CHttpSession
         ],
     ];
     
-    /**
-     * Constructor
-     */
-    public function __construct($config = [])
-    {
-        $this->config = array_merge($this->config, $config);
-        $this->applyConfig();
-        $this->init();
-    }
     
     /**
      * Apply configuration from params or env
@@ -110,6 +101,9 @@ class Session extends \CHttpSession
      */
     public function init()
     {
+        $this->config = array_merge($this->config, $this->config);
+        $this->applyConfig();
+
         parent::init();
         
         // Set cookie parameters

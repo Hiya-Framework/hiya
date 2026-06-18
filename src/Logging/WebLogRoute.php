@@ -11,6 +11,7 @@ namespace Hiya\Logging;
 use Yii;
 use CWebLogRoute;
 use CLogger;
+use Hiya;
 
 /**
  * HiyaWebLogRoute - Enhanced Web Log Route for Hiya Framework
@@ -137,10 +138,18 @@ class WebLogRoute extends CWebLogRoute
      */
     protected function isApiRequest()
     {
-        $controller = \Yii::app()->getController();
+        if (method_exists(\Hiya::app()->request, 'isApiRequest')) {
+            return \Hiya::app()->request->isApiRequest();
+        }
         
-        if ($controller instanceof \Hiya\Base\Controller) {
-            return $controller->isApi;
+        $controller = \Yii::app()->getController();
+        if ($controller) {
+            if ($controller instanceof \Hiya\Base\ApiController) {
+                return true;
+            }
+            if (property_exists($controller, 'isApi') && $controller->isApi === true) {
+                return true;
+            }
         }
         
         return false;
@@ -153,6 +162,7 @@ class WebLogRoute extends CWebLogRoute
     public function processLogs($logs)
     {
         if ($this->isApiRequest()) {
+            Hiya::log('API request detected, skipping debug bar', 'info', 'debug');
             return;
         }
         

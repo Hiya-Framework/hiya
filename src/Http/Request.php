@@ -37,6 +37,8 @@ class Request extends \CHttpRequest
     */
     protected $_headers;
 
+    protected $_isApiRequest = null;
+
     /**
      * Initialize
      */
@@ -50,20 +52,44 @@ class Request extends \CHttpRequest
         $this->parseRestParams();
     }
 
-    protected function isApiRequest()
+    public function isApiRequest()
     {
-       $contentType = $this->header('Content-Type');
-    
-        if ($contentType && strpos($contentType, 'application/json') !== false) {
+        if ($this->_isApiRequest !== null) {
+            return $this->_isApiRequest;
+        }
+
+        $contentType = $this->header('Content-Type');
+        if ($contentType) {
+            $apiTypes = [
+                'application/json',
+                'multipart/form-data',
+                'application/x-www-form-urlencoded',
+                'application/xml',
+                'text/xml',
+            ];
+            foreach ($apiTypes as $type) {
+                if (strpos($contentType, $type) !== false) {
+                    $this->_isApiRequest = true;
+                    return true;
+                }
+            }
+        }
+        $accept = $this->header('Accept');
+        if ($accept && strpos($accept, 'application/json') !== false) {
+            $this->_isApiRequest = true;
             return true;
         }
 
-        if ($contentType && strpos($contentType, 'multipart/form-data') !== false) {
+        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            $this->_isApiRequest = true;
             return true;
         }
 
+        $this->_isApiRequest = false;
         return false;
     }
+
     
     /**
      * Returns all HTTP headers.
@@ -322,14 +348,31 @@ class Request extends \CHttpRequest
 
     /**
      * Check if request is JSON
-     *
-     * @return bool
      */
     public function isJson()
     {
         $contentType = $this->getContentType();
         return $contentType && strpos($contentType, 'application/json') !== false;
     }
+
+    /**
+     * Check if request is form-urlencoded
+     */
+    public function isFormUrlEncoded()
+    {
+        $contentType = $this->getContentType();
+        return $contentType && strpos($contentType, 'application/x-www-form-urlencoded') !== false;
+    }
+
+    /**
+     * Check if request is multipart/form-data
+     */
+    public function isMultipart()
+    {
+        $contentType = $this->getContentType();
+        return $contentType && strpos($contentType, 'multipart/form-data') !== false;
+    }
+
 
     /**
      * Check if request has file
