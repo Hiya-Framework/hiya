@@ -1,10 +1,12 @@
 <?php
 /*
- * Copyright (c) Yusuf Hermanto <github.com/hermans>
+ * @author Yusuf Hermanto <github.com/hermans>
+ * @copyright (c) taktikspace.com
  * @link https://www.taktikspace.com/hiya
  * @package Hiya\Http
  * @since 1.0
  */
+
 
 namespace Hiya\Http;
 

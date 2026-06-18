@@ -1,6 +1,7 @@
 <?php
 /*
- * Copyright (c) Yusuf Hermanto <github.com/hermans>
+ * @author Hermans <github.com/hermans>
+ * @copyright (c) taktikspace.com
  * @link https://www.taktikspace.com/hiya
  * @package Hiya\Component\Auth
  * @since 1.0

@@ -1,8 +1,9 @@
 <?php
 /*
- * Copyright (c) Yusuf Hermanto <github.com/hermans>
+ * @author Hermans <github.com/hermans>
+ * @copyright (c) taktikspace.com
  * @link https://www.taktikspace.com/hiya
- * @package Hiya\Base\Controller
+ * @package Hiya\Base\Traits
  * @since 1.0
  * 
  * Api Controller

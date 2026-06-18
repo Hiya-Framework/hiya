@@ -5,20 +5,21 @@
  * @link https://www.taktikspace.com/hiya
  * @package Hiya\Base
  * @since 1.0
+ * 
+ * Resources
  */
 
 namespace Hiya\Base;
 
-class Component extends \CApplicationComponent
+class DTO
 {
-    public function __construct()
+    public function toArray(): array
     {
-        // this auto load when component intialize
-        $this->init();
+        return get_object_vars($this);
     }
-
-    public function init()
+    
+    public function toJson(): string
     {
-        parent::init();
+        return json_encode($this->toArray());
     }
 }
