@@ -13,7 +13,7 @@ defined('YII_DEBUG') or define('YII_DEBUG',HIYA_DEBUG);
 
 // Path constants
 defined('HIYA_PATH') or define('HIYA_PATH', dirname(__FILE__));
-defined('HIYA_VERSION') or define('HIYA_VERSION', '1.0-dev');
+defined('HIYA_VERSION') or define('HIYA_VERSION', '0.0.1-alpha');
 
 // Load YiiBase
 if(!class_exists('YiiBase', false))
