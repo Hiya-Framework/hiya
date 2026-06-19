@@ -1,5 +1,5 @@
 # Runtime & Cache
-/protected/demos/console/protected/runtime/*
+/protected/demos/demo1/protected/runtime/*
 /protected/runtime/*
 /runtime/*
 *.log
