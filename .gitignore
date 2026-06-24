@@ -1,7 +1,8 @@
 # Runtime & Cache
-/protected/demos/demo1/protected/runtime/*
-/protected/runtime/*
-/runtime/*
+/examples/hello/protected/runtime/*
+/examples/demo1/protected/runtime/*
+/hiya/lib/yii-full/*
+
 *.log
 *.cache
 
@@ -19,7 +20,6 @@ composer.lock
 Thumbs.db
 
 # Config with secrets
-/protected/config/local.php
 .env
 
 # Uploads
