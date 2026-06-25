@@ -28,6 +28,26 @@ class SecurityManager extends CSecurityManager
     public $validateEncryptionKey = false;
 
     /**
+     * @var string Custom encryption key from config
+     * Can be set via: 'encryptionKey' => 'your-key-here'
+     */
+    public $encryptionKey = null;
+
+    /**
+     * Initialize the component
+     * Override to set encryption key from config before parent init
+     */
+    public function init()
+    {
+        // Set encryption key from config if provided
+        if (!empty($this->encryptionKey)) {
+            $this->setEncryptionKey($this->encryptionKey);
+        }
+        
+        parent::init();
+    }
+
+    /**
      * Validates the encryption key without using deprecated mcrypt functions
      * 
      * This method overrides the parent implementation to skip mcrypt-based validation
@@ -90,12 +110,18 @@ class SecurityManager extends CSecurityManager
      * If no key is explicitly set, this method will:
      * 1. Check if key exists in parent
      * 2. Try to load from global state (persistent storage)
-     * 3. Generate a new random 32-byte key if none found
+     * 3. Use custom encryption key from config if set
+     * 4. Generate a new random 32-byte key if none found
      * 
      * @return string The encryption key
      */
     public function getEncryptionKey()
     {
+        // Use custom encryption key from config if set
+        if (!empty($this->encryptionKey)) {
+            return $this->encryptionKey;
+        }
+
         // Use parent method to get the key if already set
         try {
             $key = parent::getEncryptionKey();
