@@ -48,4 +48,17 @@ class Session extends \CHttpSession
     {
         return $this->get($key, $defaultValue);
     }
+
+    /**
+     * Set session state
+     * Alias for setState()
+     * 
+     * @param string $key
+     * @param mixed $value
+     * @return $this
+     */
+    public function set($key, $defaultValue = null)
+    {
+        return $this->setState($key, $defaultValue);
+    }
 }
