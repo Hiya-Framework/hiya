@@ -38,6 +38,13 @@ class Controller extends \CController
      * @var bool Is this Api Controller
      */
     public $isApi = false;
+    
+    
+    protected $publicAccess = [];
+    protected $authAccess = [];
+    protected $adminAccess = [];
+
+    protected $allowedMethods = [];
 
     /**
      * Initialize controller
@@ -53,7 +60,40 @@ class Controller extends \CController
     protected function isApiRequest()
     {
         return $this->isApi;
-    }   
+    }    
+
+    /**
+     * Check allowed methods
+     */
+    protected function checkAllowedMethods($actionId)
+    {
+        if (isset($this->allowedMethods[$actionId])) {
+            $allowed = (array) $this->allowedMethods[$actionId];
+            $current = $this->request->getRequestType();
+            
+            if (!in_array($current, $allowed)) {
+                throw new \CHttpException(405, 'Method not allowed');
+            }
+        }
+    }
+
+    protected function checkIpAddress()
+    {
+        $clientIp = \Hiya::app()->request->getUserHostAddress();
+
+        if (!in_array($clientIp, $this->allowedIps)) {
+            throw new \CHttpException(403, 'Access Denied');
+        }
+    }
+
+    protected function beforeAction($action)
+    {
+        // Check allowed methods
+        $this->checkAllowedMethods($action->id);
+
+        return parent::beforeAction($action);
+    }
+
 
     /**
      * Create URL
