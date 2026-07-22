@@ -457,6 +457,11 @@ class WebLogRoute extends CWebLogRoute
      */
     protected function renderView($data)
     {
+        
+        if (Yii::app()->request->isAjaxRequest) {
+            return;
+        }
+
         $viewPaths = [
             Yii::getPathOfAlias('application.views.log') . '/hiya-log.php',
             dirname(__FILE__) . '/views/hiya-log.php',
