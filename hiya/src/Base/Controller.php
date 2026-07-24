@@ -9,6 +9,7 @@
 
 namespace Hiya\Base;
 
+use Hiya;
 use Hiya\Http\Response;
 use Hiya\Http\Request;
 
@@ -79,7 +80,7 @@ class Controller extends \CController
 
     protected function checkIpAddress()
     {
-        $clientIp = \Hiya::app()->request->getUserHostAddress();
+        $clientIp = Hiya::app()->request->getUserHostAddress();
 
         if (!in_array($clientIp, $this->allowedIps)) {
             throw new \CHttpException(403, 'Access Denied');
@@ -94,6 +95,14 @@ class Controller extends \CController
         return parent::beforeAction($action);
     }
 
+    /**
+     * call action from another controller
+     */
+    public function runController($route, $params = [])
+    {
+        return Hiya::app()->runController($route);        
+    }
+
 
     /**
      * Create URL
@@ -105,7 +114,7 @@ class Controller extends \CController
      */
     public function url($route, $params = array(), $ampersand = '&')
     {
-        return \Hiya::app()->createUrl($route, $params, $ampersand);
+        return Hiya::app()->createUrl($route, $params, $ampersand);
     }
 
     /**
@@ -115,7 +124,7 @@ class Controller extends \CController
      */
     public function setFlash($type, $message)
     {
-        \Hiya::app()->user->setFlash($type, $message);
+        Hiya::app()->user->setFlash($type, $message);
     }
 
     /**
@@ -125,7 +134,7 @@ class Controller extends \CController
      */
     public function getFlash($type)
     {
-        return \Hiya::app()->user->getFlash($type);
+        return Hiya::app()->user->getFlash($type);
     }
 
     /**
@@ -134,7 +143,7 @@ class Controller extends \CController
      */
     public function getUserId()
     {
-        return \Hiya::app()->user->isGuest ? null : \Hiya::app()->user->id;
+        return Hiya::app()->user->isGuest ? null : Hiya::app()->user->id;
     }
 
     /**
@@ -143,7 +152,7 @@ class Controller extends \CController
      */
     public function getUser()
     {
-        return \Hiya::app()->user->isGuest ? null : \Hiya::app()->user->getUserData();
+        return Hiya::app()->user->isGuest ? null : Hiya::app()->user->getUserData();
     }
 
     /**
@@ -159,14 +168,14 @@ class Controller extends \CController
      * get csrf name
      */
     public function getCsrfName(){
-        return \Hiya::app()->request->csrfTokenName;
+        return Hiya::app()->request->csrfTokenName;
     }
 
     /**
      * get csrf
      */
     public function getCsrfValue(){
-        return \Hiya::app()->request->getCsrfToken();
+        return Hiya::app()->request->getCsrfToken();
     }
 
 }
