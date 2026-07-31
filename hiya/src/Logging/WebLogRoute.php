@@ -96,8 +96,6 @@ class WebLogRoute extends CWebLogRoute
     public function init()
     {
         parent::init();
-
-        echo 'test';exit;
         
         // Auto-register as default logger when in debug mode
         if (YII_DEBUG && $this->enabled) {
@@ -461,6 +459,20 @@ class WebLogRoute extends CWebLogRoute
         if (Yii::app()->request->isAjaxRequest) {
             return;
         }
+
+        $contentType = '';
+
+        foreach (headers_list() as $header) {
+            if (stripos($header, 'Content-Type:') === 0) {
+                $contentType = trim(substr($header, strlen('Content-Type:')));
+                break;
+            }
+        }
+
+        if (stripos($contentType, 'application/json') !== false) {
+            return;
+        }
+        
 
         $viewPaths = [
             Yii::getPathOfAlias('application.views.log') . '/hiya-log.php',
