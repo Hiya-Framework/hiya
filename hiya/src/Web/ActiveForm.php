@@ -9,14 +9,18 @@
 
 namespace Hiya\Web;
 
-use CActiveForm;
-
 class ActiveForm extends \CActiveForm
 {
     public function textField($model, $attribute, $htmlOptions = array())
     {
         $this->setFieldName($model, $attribute, $htmlOptions);
         return parent::textField($model, $attribute, $htmlOptions);
+    }
+
+    public function hiddenField($model, $attribute, $htmlOptions = array())
+    {
+        $this->setFieldName($model, $attribute, $htmlOptions);
+        return parent::hiddenField($model, $attribute, $htmlOptions);
     }
     
     public function passwordField($model, $attribute, $htmlOptions = array())
