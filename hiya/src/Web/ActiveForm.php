@@ -16,6 +16,12 @@ class ActiveForm extends \CActiveForm
         $this->setFieldName($model, $attribute, $htmlOptions);
         return parent::textField($model, $attribute, $htmlOptions);
     }
+    
+    public function numberField($model, $attribute, $htmlOptions = array())
+    {
+        $this->setFieldName($model, $attribute, $htmlOptions);
+        return parent::numberField($model, $attribute, $htmlOptions);
+    }
 
     public function hiddenField($model, $attribute, $htmlOptions = array())
     {
